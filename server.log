@@ -1,0 +1,677 @@
+
+> dj-app@0.1.0 start
+> react-scripts start
+
+(node:61183) [DEP_WEBPACK_DEV_SERVER_ON_AFTER_SETUP_MIDDLEWARE] DeprecationWarning: 'onAfterSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:61183) [DEP_WEBPACK_DEV_SERVER_ON_BEFORE_SETUP_MIDDLEWARE] DeprecationWarning: 'onBeforeSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
+Starting the development server...
+
+Compiled successfully!
+
+You can now view dj-app in the browser.
+
+  Local:            http://localhost:6000
+  On Your Network:  http://192.168.6.200:6000
+
+Note that the development build is not optimized.
+To create a production build, use npm run build.
+
+webpack compiled successfully
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+ERROR in src/lib/spotifyPlayer.ts:3:11
+TS2503: Cannot find namespace 'Spotify'.
+    1 | export interface SpotifyPlayer {
+    2 |   device_id: string
+  > 3 |   player: Spotify.Player
+      |           ^^^^^^^
+    4 | }
+    5 |
+    6 | export class SpotifyPlayerManager {
+
+ERROR in src/lib/spotifyPlayer.ts:7:20
+TS2503: Cannot find namespace 'Spotify'.
+     5 |
+     6 | export class SpotifyPlayerManager {
+  >  7 |   private playerA: Spotify.Player | null = null
+       |                    ^^^^^^^
+     8 |   private playerB: Spotify.Player | null = null
+     9 |   private deviceIdA: string | null = null
+    10 |   private deviceIdB: string | null = null
+
+ERROR in src/lib/spotifyPlayer.ts:8:20
+TS2503: Cannot find namespace 'Spotify'.
+     6 | export class SpotifyPlayerManager {
+     7 |   private playerA: Spotify.Player | null = null
+  >  8 |   private playerB: Spotify.Player | null = null
+       |                    ^^^^^^^
+     9 |   private deviceIdA: string | null = null
+    10 |   private deviceIdB: string | null = null
+    11 |   private token: string
+
+ERROR in src/lib/spotifyPlayer.ts:21:14
+TS2339: Property 'onSpotifyWebPlaybackSDKReady' does not exist on type 'Window & typeof globalThis'.
+    19 |   async initializePlayers(): Promise<void> {
+    20 |     return new Promise((resolve) => {
+  > 21 |       window.onSpotifyWebPlaybackSDKReady = () => {
+       |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    22 |         // Initialize Player A
+    23 |         this.playerA = new window.Spotify.Player({
+    24 |           name: 'DJ Studio - Deck A',
+
+ERROR in src/lib/spotifyPlayer.ts:23:35
+TS2339: Property 'Spotify' does not exist on type 'Window & typeof globalThis'.
+    21 |       window.onSpotifyWebPlaybackSDKReady = () => {
+    22 |         // Initialize Player A
+  > 23 |         this.playerA = new window.Spotify.Player({
+       |                                   ^^^^^^^
+    24 |           name: 'DJ Studio - Deck A',
+    25 |           getOAuthToken: (cb: (token: string) => void) => { cb(this.token) },
+    26 |           volume: 0.75
+
+ERROR in src/lib/spotifyPlayer.ts:30:35
+TS2339: Property 'Spotify' does not exist on type 'Window & typeof globalThis'.
+    28 |
+    29 |         // Initialize Player B
+  > 30 |         this.playerB = new window.Spotify.Player({
+       |                                   ^^^^^^^
+    31 |           name: 'DJ Studio - Deck B',
+    32 |           getOAuthToken: (cb: (token: string) => void) => { cb(this.token) },
+    33 |           volume: 0.75
+
+ERROR in src/lib/spotifyPlayer.ts:50:19
+TS2339: Property 'Spotify' does not exist on type 'Window & typeof globalThis'.
+    48 |
+    49 |       // Load Spotify SDK
+  > 50 |       if (!window.Spotify) {
+       |                   ^^^^^^^
+    51 |         const script = document.createElement('script')
+    52 |         script.src = 'https://sdk.scdn.co/spotify-player.js'
+    53 |         script.async = true
+
+ERROR in src/lib/spotifyPlayer.ts:59:37
+TS2503: Cannot find namespace 'Spotify'.
+    57 |   }
+    58 |
+  > 59 |   private setupPlayerEvents(player: Spotify.Player, deck: 'A' | 'B') {
+       |                                     ^^^^^^^
+    60 |     player.addListener('ready', ({ device_id }) => {
+    61 |       console.log(`Deck ${deck} ready with Device ID`, device_id)
+    62 |       if (deck === 'A') {
+
+ERROR in src/lib/spotifyPlayer.ts:60:36
+TS7031: Binding element 'device_id' implicitly has an 'any' type.
+    58 |
+    59 |   private setupPlayerEvents(player: Spotify.Player, deck: 'A' | 'B') {
+  > 60 |     player.addListener('ready', ({ device_id }) => {
+       |                                    ^^^^^^^^^
+    61 |       console.log(`Deck ${deck} ready with Device ID`, device_id)
+    62 |       if (deck === 'A') {
+    63 |         this.deviceIdA = device_id
+
+ERROR in src/lib/spotifyPlayer.ts:69:40
+TS7031: Binding element 'device_id' implicitly has an 'any' type.
+    67 |     })
+    68 |
+  > 69 |     player.addListener('not_ready', ({ device_id }) => {
+       |                                        ^^^^^^^^^
+    70 |       console.log(`Deck ${deck} has gone offline`, device_id)
+    71 |     })
+    72 |
+
+ERROR in src/lib/spotifyPlayer.ts:73:49
+TS7006: Parameter 'state' implicitly has an 'any' type.
+    71 |     })
+    72 |
+  > 73 |     player.addListener('player_state_changed', (state) => {
+       |                                                 ^^^^^
+    74 |       if (!state) return
+    75 |       console.log(`Deck ${deck} state changed:`, state)
+    76 |     })
+
+ERROR in src/lib/spotifyPlayer.ts:78:51
+TS7031: Binding element 'message' implicitly has an 'any' type.
+    76 |     })
+    77 |
+  > 78 |     player.addListener('initialization_error', ({ message }) => {
+       |                                                   ^^^^^^^
+    79 |       console.error(`Deck ${deck} initialization error:`, message)
+    80 |     })
+    81 |
+
+ERROR in src/lib/spotifyPlayer.ts:82:51
+TS7031: Binding element 'message' implicitly has an 'any' type.
+    80 |     })
+    81 |
+  > 82 |     player.addListener('authentication_error', ({ message }) => {
+       |                                                   ^^^^^^^
+    83 |       console.error(`Deck ${deck} authentication error:`, message)
+    84 |     })
+    85 |
+
+ERROR in src/lib/spotifyPlayer.ts:86:44
+TS7031: Binding element 'message' implicitly has an 'any' type.
+    84 |     })
+    85 |
+  > 86 |     player.addListener('account_error', ({ message }) => {
+       |                                            ^^^^^^^
+    87 |       console.error(`Deck ${deck} account error:`, message)
+    88 |     })
+    89 |   }
+
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+ERROR in src/lib/spotifyPlayer.ts:3:11
+TS2503: Cannot find namespace 'Spotify'.
+    1 | export interface SpotifyPlayer {
+    2 |   device_id: string
+  > 3 |   player: Spotify.Player
+      |           ^^^^^^^
+    4 | }
+    5 |
+    6 | export class SpotifyPlayerManager {
+
+ERROR in src/lib/spotifyPlayer.ts:7:20
+TS2503: Cannot find namespace 'Spotify'.
+     5 |
+     6 | export class SpotifyPlayerManager {
+  >  7 |   private playerA: Spotify.Player | null = null
+       |                    ^^^^^^^
+     8 |   private playerB: Spotify.Player | null = null
+     9 |   private deviceIdA: string | null = null
+    10 |   private deviceIdB: string | null = null
+
+ERROR in src/lib/spotifyPlayer.ts:8:20
+TS2503: Cannot find namespace 'Spotify'.
+     6 | export class SpotifyPlayerManager {
+     7 |   private playerA: Spotify.Player | null = null
+  >  8 |   private playerB: Spotify.Player | null = null
+       |                    ^^^^^^^
+     9 |   private deviceIdA: string | null = null
+    10 |   private deviceIdB: string | null = null
+    11 |   private token: string
+
+ERROR in src/lib/spotifyPlayer.ts:21:14
+TS2339: Property 'onSpotifyWebPlaybackSDKReady' does not exist on type 'Window & typeof globalThis'.
+    19 |   async initializePlayers(): Promise<void> {
+    20 |     return new Promise((resolve) => {
+  > 21 |       window.onSpotifyWebPlaybackSDKReady = () => {
+       |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    22 |         // Initialize Player A
+    23 |         this.playerA = new window.Spotify.Player({
+    24 |           name: 'DJ Studio - Deck A',
+
+ERROR in src/lib/spotifyPlayer.ts:23:35
+TS2339: Property 'Spotify' does not exist on type 'Window & typeof globalThis'.
+    21 |       window.onSpotifyWebPlaybackSDKReady = () => {
+    22 |         // Initialize Player A
+  > 23 |         this.playerA = new window.Spotify.Player({
+       |                                   ^^^^^^^
+    24 |           name: 'DJ Studio - Deck A',
+    25 |           getOAuthToken: (cb: (token: string) => void) => { cb(this.token) },
+    26 |           volume: 0.75
+
+ERROR in src/lib/spotifyPlayer.ts:30:35
+TS2339: Property 'Spotify' does not exist on type 'Window & typeof globalThis'.
+    28 |
+    29 |         // Initialize Player B
+  > 30 |         this.playerB = new window.Spotify.Player({
+       |                                   ^^^^^^^
+    31 |           name: 'DJ Studio - Deck B',
+    32 |           getOAuthToken: (cb: (token: string) => void) => { cb(this.token) },
+    33 |           volume: 0.75
+
+ERROR in src/lib/spotifyPlayer.ts:50:19
+TS2339: Property 'Spotify' does not exist on type 'Window & typeof globalThis'.
+    48 |
+    49 |       // Load Spotify SDK
+  > 50 |       if (!window.Spotify) {
+       |                   ^^^^^^^
+    51 |         const script = document.createElement('script')
+    52 |         script.src = 'https://sdk.scdn.co/spotify-player.js'
+    53 |         script.async = true
+
+ERROR in src/lib/spotifyPlayer.ts:59:37
+TS2503: Cannot find namespace 'Spotify'.
+    57 |   }
+    58 |
+  > 59 |   private setupPlayerEvents(player: Spotify.Player, deck: 'A' | 'B') {
+       |                                     ^^^^^^^
+    60 |     player.addListener('ready', ({ device_id }) => {
+    61 |       console.log(`Deck ${deck} ready with Device ID`, device_id)
+    62 |       if (deck === 'A') {
+
+ERROR in src/lib/spotifyPlayer.ts:60:36
+TS7031: Binding element 'device_id' implicitly has an 'any' type.
+    58 |
+    59 |   private setupPlayerEvents(player: Spotify.Player, deck: 'A' | 'B') {
+  > 60 |     player.addListener('ready', ({ device_id }) => {
+       |                                    ^^^^^^^^^
+    61 |       console.log(`Deck ${deck} ready with Device ID`, device_id)
+    62 |       if (deck === 'A') {
+    63 |         this.deviceIdA = device_id
+
+ERROR in src/lib/spotifyPlayer.ts:69:40
+TS7031: Binding element 'device_id' implicitly has an 'any' type.
+    67 |     })
+    68 |
+  > 69 |     player.addListener('not_ready', ({ device_id }) => {
+       |                                        ^^^^^^^^^
+    70 |       console.log(`Deck ${deck} has gone offline`, device_id)
+    71 |     })
+    72 |
+
+ERROR in src/lib/spotifyPlayer.ts:73:49
+TS7006: Parameter 'state' implicitly has an 'any' type.
+    71 |     })
+    72 |
+  > 73 |     player.addListener('player_state_changed', (state) => {
+       |                                                 ^^^^^
+    74 |       if (!state) return
+    75 |       console.log(`Deck ${deck} state changed:`, state)
+    76 |     })
+
+ERROR in src/lib/spotifyPlayer.ts:78:51
+TS7031: Binding element 'message' implicitly has an 'any' type.
+    76 |     })
+    77 |
+  > 78 |     player.addListener('initialization_error', ({ message }) => {
+       |                                                   ^^^^^^^
+    79 |       console.error(`Deck ${deck} initialization error:`, message)
+    80 |     })
+    81 |
+
+ERROR in src/lib/spotifyPlayer.ts:82:51
+TS7031: Binding element 'message' implicitly has an 'any' type.
+    80 |     })
+    81 |
+  > 82 |     player.addListener('authentication_error', ({ message }) => {
+       |                                                   ^^^^^^^
+    83 |       console.error(`Deck ${deck} authentication error:`, message)
+    84 |     })
+    85 |
+
+ERROR in src/lib/spotifyPlayer.ts:86:44
+TS7031: Binding element 'message' implicitly has an 'any' type.
+    84 |     })
+    85 |
+  > 86 |     player.addListener('account_error', ({ message }) => {
+       |                                            ^^^^^^^
+    87 |       console.error(`Deck ${deck} account error:`, message)
+    88 |     })
+    89 |   }
+
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+ERROR in src/lib/spotifyPlayer.ts:3:11
+TS2503: Cannot find namespace 'Spotify'.
+    1 | export interface SpotifyPlayer {
+    2 |   device_id: string
+  > 3 |   player: Spotify.Player
+      |           ^^^^^^^
+    4 | }
+    5 |
+    6 | export class SpotifyPlayerManager {
+
+ERROR in src/lib/spotifyPlayer.ts:7:20
+TS2503: Cannot find namespace 'Spotify'.
+     5 |
+     6 | export class SpotifyPlayerManager {
+  >  7 |   private playerA: Spotify.Player | null = null
+       |                    ^^^^^^^
+     8 |   private playerB: Spotify.Player | null = null
+     9 |   private deviceIdA: string | null = null
+    10 |   private deviceIdB: string | null = null
+
+ERROR in src/lib/spotifyPlayer.ts:8:20
+TS2503: Cannot find namespace 'Spotify'.
+     6 | export class SpotifyPlayerManager {
+     7 |   private playerA: Spotify.Player | null = null
+  >  8 |   private playerB: Spotify.Player | null = null
+       |                    ^^^^^^^
+     9 |   private deviceIdA: string | null = null
+    10 |   private deviceIdB: string | null = null
+    11 |   private token: string
+
+ERROR in src/lib/spotifyPlayer.ts:59:37
+TS2503: Cannot find namespace 'Spotify'.
+    57 |   }
+    58 |
+  > 59 |   private setupPlayerEvents(player: Spotify.Player, deck: 'A' | 'B') {
+       |                                     ^^^^^^^
+    60 |     player.addListener('ready', ({ device_id }) => {
+    61 |       console.log(`Deck ${deck} ready with Device ID`, device_id)
+    62 |       if (deck === 'A') {
+
+ERROR in src/lib/spotifyPlayer.ts:60:36
+TS7031: Binding element 'device_id' implicitly has an 'any' type.
+    58 |
+    59 |   private setupPlayerEvents(player: Spotify.Player, deck: 'A' | 'B') {
+  > 60 |     player.addListener('ready', ({ device_id }) => {
+       |                                    ^^^^^^^^^
+    61 |       console.log(`Deck ${deck} ready with Device ID`, device_id)
+    62 |       if (deck === 'A') {
+    63 |         this.deviceIdA = device_id
+
+ERROR in src/lib/spotifyPlayer.ts:69:40
+TS7031: Binding element 'device_id' implicitly has an 'any' type.
+    67 |     })
+    68 |
+  > 69 |     player.addListener('not_ready', ({ device_id }) => {
+       |                                        ^^^^^^^^^
+    70 |       console.log(`Deck ${deck} has gone offline`, device_id)
+    71 |     })
+    72 |
+
+ERROR in src/lib/spotifyPlayer.ts:73:49
+TS7006: Parameter 'state' implicitly has an 'any' type.
+    71 |     })
+    72 |
+  > 73 |     player.addListener('player_state_changed', (state) => {
+       |                                                 ^^^^^
+    74 |       if (!state) return
+    75 |       console.log(`Deck ${deck} state changed:`, state)
+    76 |     })
+
+ERROR in src/lib/spotifyPlayer.ts:78:51
+TS7031: Binding element 'message' implicitly has an 'any' type.
+    76 |     })
+    77 |
+  > 78 |     player.addListener('initialization_error', ({ message }) => {
+       |                                                   ^^^^^^^
+    79 |       console.error(`Deck ${deck} initialization error:`, message)
+    80 |     })
+    81 |
+
+ERROR in src/lib/spotifyPlayer.ts:82:51
+TS7031: Binding element 'message' implicitly has an 'any' type.
+    80 |     })
+    81 |
+  > 82 |     player.addListener('authentication_error', ({ message }) => {
+       |                                                   ^^^^^^^
+    83 |       console.error(`Deck ${deck} authentication error:`, message)
+    84 |     })
+    85 |
+
+ERROR in src/lib/spotifyPlayer.ts:86:44
+TS7031: Binding element 'message' implicitly has an 'any' type.
+    84 |     })
+    85 |
+  > 86 |     player.addListener('account_error', ({ message }) => {
+       |                                            ^^^^^^^
+    87 |       console.error(`Deck ${deck} account error:`, message)
+    88 |     })
+    89 |   }
+
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+ERROR in src/lib/spotifyPlayer.ts:3:11
+TS2503: Cannot find namespace 'Spotify'.
+    1 | export interface SpotifyPlayer {
+    2 |   device_id: string
+  > 3 |   player: Spotify.Player
+      |           ^^^^^^^
+    4 | }
+    5 |
+    6 | export class SpotifyPlayerManager {
+
+ERROR in src/lib/spotifyPlayer.ts:7:20
+TS2503: Cannot find namespace 'Spotify'.
+     5 |
+     6 | export class SpotifyPlayerManager {
+  >  7 |   private playerA: Spotify.Player | null = null
+       |                    ^^^^^^^
+     8 |   private playerB: Spotify.Player | null = null
+     9 |   private deviceIdA: string | null = null
+    10 |   private deviceIdB: string | null = null
+
+ERROR in src/lib/spotifyPlayer.ts:8:20
+TS2503: Cannot find namespace 'Spotify'.
+     6 | export class SpotifyPlayerManager {
+     7 |   private playerA: Spotify.Player | null = null
+  >  8 |   private playerB: Spotify.Player | null = null
+       |                    ^^^^^^^
+     9 |   private deviceIdA: string | null = null
+    10 |   private deviceIdB: string | null = null
+    11 |   private token: string
+
+ERROR in src/lib/spotifyPlayer.ts:59:37
+TS2503: Cannot find namespace 'Spotify'.
+    57 |   }
+    58 |
+  > 59 |   private setupPlayerEvents(player: Spotify.Player, deck: 'A' | 'B') {
+       |                                     ^^^^^^^
+    60 |     player.addListener('ready', ({ device_id }) => {
+    61 |       console.log(`Deck ${deck} ready with Device ID`, device_id)
+    62 |       if (deck === 'A') {
+
+ERROR in src/lib/spotifyPlayer.ts:60:36
+TS7031: Binding element 'device_id' implicitly has an 'any' type.
+    58 |
+    59 |   private setupPlayerEvents(player: Spotify.Player, deck: 'A' | 'B') {
+  > 60 |     player.addListener('ready', ({ device_id }) => {
+       |                                    ^^^^^^^^^
+    61 |       console.log(`Deck ${deck} ready with Device ID`, device_id)
+    62 |       if (deck === 'A') {
+    63 |         this.deviceIdA = device_id
+
+ERROR in src/lib/spotifyPlayer.ts:69:40
+TS7031: Binding element 'device_id' implicitly has an 'any' type.
+    67 |     })
+    68 |
+  > 69 |     player.addListener('not_ready', ({ device_id }) => {
+       |                                        ^^^^^^^^^
+    70 |       console.log(`Deck ${deck} has gone offline`, device_id)
+    71 |     })
+    72 |
+
+ERROR in src/lib/spotifyPlayer.ts:73:49
+TS7006: Parameter 'state' implicitly has an 'any' type.
+    71 |     })
+    72 |
+  > 73 |     player.addListener('player_state_changed', (state) => {
+       |                                                 ^^^^^
+    74 |       if (!state) return
+    75 |       console.log(`Deck ${deck} state changed:`, state)
+    76 |     })
+
+ERROR in src/lib/spotifyPlayer.ts:78:51
+TS7031: Binding element 'message' implicitly has an 'any' type.
+    76 |     })
+    77 |
+  > 78 |     player.addListener('initialization_error', ({ message }) => {
+       |                                                   ^^^^^^^
+    79 |       console.error(`Deck ${deck} initialization error:`, message)
+    80 |     })
+    81 |
+
+ERROR in src/lib/spotifyPlayer.ts:82:51
+TS7031: Binding element 'message' implicitly has an 'any' type.
+    80 |     })
+    81 |
+  > 82 |     player.addListener('authentication_error', ({ message }) => {
+       |                                                   ^^^^^^^
+    83 |       console.error(`Deck ${deck} authentication error:`, message)
+    84 |     })
+    85 |
+
+ERROR in src/lib/spotifyPlayer.ts:86:44
+TS7031: Binding element 'message' implicitly has an 'any' type.
+    84 |     })
+    85 |
+  > 86 |     player.addListener('account_error', ({ message }) => {
+       |                                            ^^^^^^^
+    87 |       console.error(`Deck ${deck} account error:`, message)
+    88 |     })
+    89 |   }
+
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+ERROR in src/lib/spotifyPlayer.ts:5:11
+TS2503: Cannot find namespace 'Spotify'.
+    3 | export interface SpotifyPlayer {
+    4 |   device_id: string
+  > 5 |   player: Spotify.Player
+      |           ^^^^^^^
+    6 | }
+    7 |
+    8 | export class SpotifyPlayerManager {
+
+ERROR in src/lib/spotifyPlayer.ts:9:20
+TS2503: Cannot find namespace 'Spotify'.
+     7 |
+     8 | export class SpotifyPlayerManager {
+  >  9 |   private playerA: Spotify.Player | null = null
+       |                    ^^^^^^^
+    10 |   private playerB: Spotify.Player | null = null
+    11 |   private deviceIdA: string | null = null
+    12 |   private deviceIdB: string | null = null
+
+ERROR in src/lib/spotifyPlayer.ts:10:20
+TS2503: Cannot find namespace 'Spotify'.
+     8 | export class SpotifyPlayerManager {
+     9 |   private playerA: Spotify.Player | null = null
+  > 10 |   private playerB: Spotify.Player | null = null
+       |                    ^^^^^^^
+    11 |   private deviceIdA: string | null = null
+    12 |   private deviceIdB: string | null = null
+    13 |   private token: string
+
+ERROR in src/lib/spotifyPlayer.ts:61:37
+TS2503: Cannot find namespace 'Spotify'.
+    59 |   }
+    60 |
+  > 61 |   private setupPlayerEvents(player: Spotify.Player, deck: 'A' | 'B') {
+       |                                     ^^^^^^^
+    62 |     player.addListener('ready', ({ device_id }) => {
+    63 |       console.log(`Deck ${deck} ready with Device ID`, device_id)
+    64 |       if (deck === 'A') {
+
+ERROR in src/lib/spotifyPlayer.ts:62:36
+TS7031: Binding element 'device_id' implicitly has an 'any' type.
+    60 |
+    61 |   private setupPlayerEvents(player: Spotify.Player, deck: 'A' | 'B') {
+  > 62 |     player.addListener('ready', ({ device_id }) => {
+       |                                    ^^^^^^^^^
+    63 |       console.log(`Deck ${deck} ready with Device ID`, device_id)
+    64 |       if (deck === 'A') {
+    65 |         this.deviceIdA = device_id
+
+ERROR in src/lib/spotifyPlayer.ts:71:40
+TS7031: Binding element 'device_id' implicitly has an 'any' type.
+    69 |     })
+    70 |
+  > 71 |     player.addListener('not_ready', ({ device_id }) => {
+       |                                        ^^^^^^^^^
+    72 |       console.log(`Deck ${deck} has gone offline`, device_id)
+    73 |     })
+    74 |
+
+ERROR in src/lib/spotifyPlayer.ts:75:49
+TS7006: Parameter 'state' implicitly has an 'any' type.
+    73 |     })
+    74 |
+  > 75 |     player.addListener('player_state_changed', (state) => {
+       |                                                 ^^^^^
+    76 |       if (!state) return
+    77 |       console.log(`Deck ${deck} state changed:`, state)
+    78 |     })
+
+ERROR in src/lib/spotifyPlayer.ts:80:51
+TS7031: Binding element 'message' implicitly has an 'any' type.
+    78 |     })
+    79 |
+  > 80 |     player.addListener('initialization_error', ({ message }) => {
+       |                                                   ^^^^^^^
+    81 |       console.error(`Deck ${deck} initialization error:`, message)
+    82 |     })
+    83 |
+
+ERROR in src/lib/spotifyPlayer.ts:84:51
+TS7031: Binding element 'message' implicitly has an 'any' type.
+    82 |     })
+    83 |
+  > 84 |     player.addListener('authentication_error', ({ message }) => {
+       |                                                   ^^^^^^^
+    85 |       console.error(`Deck ${deck} authentication error:`, message)
+    86 |     })
+    87 |
+
+ERROR in src/lib/spotifyPlayer.ts:88:44
+TS7031: Binding element 'message' implicitly has an 'any' type.
+    86 |     })
+    87 |
+  > 88 |     player.addListener('account_error', ({ message }) => {
+       |                                            ^^^^^^^
+    89 |       console.error(`Deck ${deck} account error:`, message)
+    90 |     })
+    91 |   }
+
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+ERROR in src/lib/spotifyPlayer.ts:5:11
+TS2503: Cannot find namespace 'Spotify'.
+    3 | export interface SpotifyPlayer {
+    4 |   device_id: string
+  > 5 |   player: Spotify.Player
+      |           ^^^^^^^
+    6 | }
+    7 |
+    8 | export class SpotifyPlayerManager {
+
+ERROR in src/lib/spotifyPlayer.ts:9:20
+TS2503: Cannot find namespace 'Spotify'.
+     7 |
+     8 | export class SpotifyPlayerManager {
+  >  9 |   private playerA: Spotify.Player | null = null
+       |                    ^^^^^^^
+    10 |   private playerB: Spotify.Player | null = null
+    11 |   private deviceIdA: string | null = null
+    12 |   private deviceIdB: string | null = null
+
+ERROR in src/lib/spotifyPlayer.ts:10:20
+TS2503: Cannot find namespace 'Spotify'.
+     8 | export class SpotifyPlayerManager {
+     9 |   private playerA: Spotify.Player | null = null
+  > 10 |   private playerB: Spotify.Player | null = null
+       |                    ^^^^^^^
+    11 |   private deviceIdA: string | null = null
+    12 |   private deviceIdB: string | null = null
+    13 |   private token: string
+
+ERROR in src/lib/spotifyPlayer.ts:61:37
+TS2503: Cannot find namespace 'Spotify'.
+    59 |   }
+    60 |
+  > 61 |   private setupPlayerEvents(player: Spotify.Player, deck: 'A' | 'B') {
+       |                                     ^^^^^^^
+    62 |     player.addListener('ready', ({ device_id }: { device_id: string }) => {
+    63 |       console.log(`Deck ${deck} ready with Device ID`, device_id)
+    64 |       if (deck === 'A') {
+
+ERROR in src/lib/spotifyPlayer.ts:75:56
+TS2503: Cannot find namespace 'Spotify'.
+    73 |     })
+    74 |
+  > 75 |     player.addListener('player_state_changed', (state: Spotify.PlaybackState) => {
+       |                                                        ^^^^^^^
+    76 |       if (!state) return
+    77 |       console.log(`Deck ${deck} state changed:`, state)
+    78 |     })
+

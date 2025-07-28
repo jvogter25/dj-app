@@ -1,0 +1,53 @@
+import React, { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { spotifyAuth } from '../lib/spotify'
+
+export const AuthCallback: React.FC = () => {
+  const navigate = useNavigate()
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const handleCallback = async () => {
+      try {
+        const hash = window.location.hash
+        if (!hash) {
+          throw new Error('No authentication data received')
+        }
+
+        await spotifyAuth.handleCallback(hash)
+        navigate('/')
+      } catch (err) {
+        console.error('Authentication error:', err)
+        setError(err instanceof Error ? err.message : 'Authentication failed')
+      }
+    }
+
+    handleCallback()
+  }, [navigate])
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold mb-4">Authentication Error</h2>
+          <p className="text-red-400 mb-4">{error}</p>
+          <button
+            onClick={() => navigate('/')}
+            className="px-4 py-2 bg-green-500 hover:bg-green-600 rounded-lg"
+          >
+            Back to Home
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white">
+      <div className="text-center">
+        <h2 className="text-2xl font-bold mb-4">Authenticating...</h2>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto"></div>
+      </div>
+    </div>
+  )
+}
