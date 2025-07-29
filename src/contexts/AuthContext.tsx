@@ -31,12 +31,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setUser(session?.user ?? null)
       if (session?.user) {
-        spotifyAuthPKCE.getStoredToken().then(token => {
-          setSpotifyToken(token ?? null)
-        })
+        const token = await spotifyAuthPKCE.getStoredToken()
+        if (token) {
+          // Test if token is still valid
+          try {
+            const response = await fetch('https://api.spotify.com/v1/me', {
+              headers: { 'Authorization': `Bearer ${token}` }
+            })
+            if (response.ok) {
+              setSpotifyToken(token)
+              console.log('Existing token is valid')
+            } else {
+              console.log('Token expired, need fresh sign-in')
+              setSpotifyToken(null)
+            }
+          } catch (error) {
+            console.log('Error validating token, need fresh sign-in')
+            setSpotifyToken(null)
+          }
+        }
       }
       setLoading(false)
     })

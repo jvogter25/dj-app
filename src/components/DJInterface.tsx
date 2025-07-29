@@ -9,7 +9,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { usePlayer } from '../contexts/PlayerContext'
 
 export const DJInterface: React.FC = () => {
-  const { signOut, spotifyToken } = useAuth()
+  const { signOut, spotifyToken, signInWithSpotify } = useAuth()
   const { 
     deckA, 
     deckB, 
@@ -173,6 +173,15 @@ export const DJInterface: React.FC = () => {
                   </button>
                 </div>
                 <div className="space-y-4">
+                  <button
+                    onClick={() => {
+                      signOut()
+                      signInWithSpotify()
+                    }}
+                    className="w-full py-2 px-4 bg-purple-600 hover:bg-purple-700 rounded-lg transition-colors"
+                  >
+                    Refresh Spotify Connection
+                  </button>
                   <button
                     onClick={signOut}
                     className="w-full py-2 px-4 bg-red-600 hover:bg-red-700 rounded-lg transition-colors"

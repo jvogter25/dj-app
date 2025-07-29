@@ -444,6 +444,11 @@ export const TrackBrowser: React.FC<TrackBrowserProps> = ({ onTrackSelect }) => 
 
   useEffect(() => {
     console.log('TrackBrowser useEffect triggered:', { viewMode, spotifyToken: !!spotifyToken })
+    if (!spotifyToken) {
+      console.log('No token available, skipping fetch')
+      return
+    }
+    
     if (viewMode === 'library') {
       fetchUserTracks()
     } else if (viewMode === 'playlists') {
@@ -463,6 +468,19 @@ export const TrackBrowser: React.FC<TrackBrowserProps> = ({ onTrackSelect }) => 
       return () => clearTimeout(delayDebounce)
     }
   }, [searchQuery, viewMode, searchTracks])
+
+  // Show connection prompt if no token
+  if (!spotifyToken) {
+    return (
+      <div className="bg-gray-800 rounded-lg p-6 h-full flex flex-col items-center justify-center">
+        <Music className="w-12 h-12 text-gray-500 mb-4" />
+        <p className="text-gray-400 mb-4">No Spotify connection</p>
+        <p className="text-sm text-gray-500 text-center mb-4">
+          Please refresh your Spotify connection to load your library
+        </p>
+      </div>
+    )
+  }
 
   return (
     <div className="bg-gray-800 rounded-lg p-6 h-full flex flex-col">
