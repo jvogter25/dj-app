@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Deck } from './Deck'
 import { Mixer } from './Mixer'
 import { TrackBrowser } from './TrackBrowser'
+import { SoundCloudBrowser } from './SoundCloudBrowser'
 import { GestureHelp } from './GestureHelp'
 import { SmartTransition, TransitionType } from './SmartTransition'
 import { LoopCapture } from './LoopCapture'
@@ -9,7 +10,7 @@ import { EffectsPanel, EffectSettings } from './EffectsPanel'
 import { SetupWizard } from './SetupWizard'
 import { SmartQueue } from './SmartQueue'
 import ErrorBoundary from './ErrorBoundary'
-import { Library, Settings, Radio, X, ChevronUp, ChevronDown, HelpCircle } from 'lucide-react'
+import { Library, Settings, Radio, X, ChevronUp, ChevronDown, HelpCircle, Music, Cloud } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { usePlayer } from '../contexts/PlayerContext'
 
@@ -31,6 +32,7 @@ export const DJInterface: React.FC = () => {
   const [showSettings, setShowSettings] = useState(false)
   const [showSetupWizard, setShowSetupWizard] = useState(false)
   const [loadedTracks, setLoadedTracks] = useState<{ A?: any, B?: any }>({})
+  const [trackSource, setTrackSource] = useState<'spotify' | 'soundcloud'>('spotify')
   
   // Effects state
   const [deckAEffects, setDeckAEffects] = useState<EffectSettings>({
@@ -228,21 +230,51 @@ export const DJInterface: React.FC = () => {
               
               {/* Track Browser */}
               <div className="bg-gray-800 rounded-lg">
-                {/* Collapsible Header */}
-                <button
-                  onClick={() => setLibraryExpanded(!libraryExpanded)}
-                  className="w-full px-6 py-3 flex items-center justify-between hover:bg-gray-700 transition-colors rounded-t-lg"
-                >
-                  <h3 className="text-lg font-semibold flex items-center gap-2">
-                    <Library className="w-5 h-5 text-purple-500" />
-                    Track Browser
-                  </h3>
-                  {libraryExpanded ? (
-                    <ChevronDown className="w-5 h-5 text-gray-400" />
-                  ) : (
-                    <ChevronUp className="w-5 h-5 text-gray-400" />
+                {/* Collapsible Header with Source Switcher */}
+                <div className="border-b border-gray-700">
+                  <button
+                    onClick={() => setLibraryExpanded(!libraryExpanded)}
+                    className="w-full px-6 py-3 flex items-center justify-between hover:bg-gray-700 transition-colors"
+                  >
+                    <h3 className="text-lg font-semibold flex items-center gap-2">
+                      <Library className="w-5 h-5 text-purple-500" />
+                      Track Browser
+                    </h3>
+                    {libraryExpanded ? (
+                      <ChevronDown className="w-5 h-5 text-gray-400" />
+                    ) : (
+                      <ChevronUp className="w-5 h-5 text-gray-400" />
+                    )}
+                  </button>
+                  
+                  {/* Source Switcher */}
+                  {libraryExpanded && (
+                    <div className="flex border-t border-gray-700">
+                      <button
+                        onClick={() => setTrackSource('spotify')}
+                        className={`flex-1 px-4 py-2 flex items-center justify-center gap-2 transition-colors ${
+                          trackSource === 'spotify' 
+                            ? 'bg-green-600 text-white' 
+                            : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
+                        }`}
+                      >
+                        <Music className="w-4 h-4" />
+                        Spotify
+                      </button>
+                      <button
+                        onClick={() => setTrackSource('soundcloud')}
+                        className={`flex-1 px-4 py-2 flex items-center justify-center gap-2 transition-colors ${
+                          trackSource === 'soundcloud' 
+                            ? 'bg-orange-600 text-white' 
+                            : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
+                        }`}
+                      >
+                        <Cloud className="w-4 h-4" />
+                        SoundCloud
+                      </button>
+                    </div>
                   )}
-                </button>
+                </div>
                 
                 {/* Collapsible Content */}
                 {libraryExpanded && (
@@ -262,9 +294,15 @@ export const DJInterface: React.FC = () => {
                         </div>
                       }
                     >
-                      <TrackBrowser 
-                        onTrackSelect={handleTrackSelect}
-                      />
+                      {trackSource === 'spotify' ? (
+                        <TrackBrowser 
+                          onTrackSelect={handleTrackSelect}
+                        />
+                      ) : (
+                        <SoundCloudBrowser
+                          onTrackSelect={handleTrackSelect}
+                        />
+                      )}
                     </ErrorBoundary>
                   </div>
                 )}

@@ -5,6 +5,7 @@ import { PlayerProvider } from './contexts/PlayerContext'
 import { DJInterface } from './components/DJInterface'
 import { MixStudio } from './components/MixStudio'
 import { AuthCallback } from './components/AuthCallback'
+import { SoundCloudCallback } from './components/SoundCloudCallback'
 import { DebugInfo } from './components/DebugInfo'
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -57,6 +58,7 @@ function App() {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
+          <Route path="/auth/soundcloud/callback" element={<SoundCloudCallback />} />
           <Route
             path="/"
             element={
