@@ -19,21 +19,24 @@ export const useGestureControls = ({
   const startValue = useRef(value)
 
   const bind = useGesture({
-    onWheel: ({ delta: [deltaX, deltaY], event }) => {
-      // Prevent default scrolling behavior
-      event.preventDefault()
-      
-      // Use horizontal swipe for control
-      const delta = Math.abs(deltaX) > Math.abs(deltaY) ? deltaX : deltaY
-      const range = max - min
-      const changeAmount = (delta / 100) * range * sensitivity
-      
-      const newValue = Math.max(min, Math.min(max, value - changeAmount))
-      onChange(newValue)
+    onWheel: ({ delta: [deltaX, deltaY], event, ctrlKey }) => {
+      // Only respond to trackpad gestures (horizontal scroll or with ctrl key)
+      if (Math.abs(deltaX) > Math.abs(deltaY) || ctrlKey) {
+        event.preventDefault()
+        event.stopPropagation()
+        
+        const delta = Math.abs(deltaX) > Math.abs(deltaY) ? deltaX : deltaY
+        const range = max - min
+        const changeAmount = (delta / 100) * range * sensitivity
+        
+        const newValue = Math.max(min, Math.min(max, value - changeAmount))
+        onChange(newValue)
+      }
     },
     onPinch: ({ offset: [scale], event }) => {
       // Pinch gesture for fine control
       event.preventDefault()
+      event.stopPropagation()
       const range = max - min
       const normalizedScale = (scale - 1) * sensitivity
       const newValue = Math.max(min, Math.min(max, startValue.current + (normalizedScale * range)))
@@ -46,6 +49,7 @@ export const useGestureControls = ({
       // Only respond to multi-touch drag (2 fingers)
       if (touches === 2) {
         event.preventDefault()
+        event.stopPropagation()
         const delta = Math.abs(mx) > Math.abs(my) ? mx : -my
         const range = max - min
         const changeAmount = (delta / 200) * range * sensitivity
@@ -54,15 +58,24 @@ export const useGestureControls = ({
         onChange(newValue)
       }
     },
-    onDragStart: () => {
-      startValue.current = value
+    onDragStart: ({ touches }) => {
+      if (touches === 2) {
+        startValue.current = value
+      }
     }
   }, {
-    wheel: { preventDefault: true },
-    pinch: { preventDefault: true },
+    wheel: { 
+      preventDefault: true,
+      eventOptions: { passive: false }
+    },
+    pinch: { 
+      preventDefault: true,
+      eventOptions: { passive: false }
+    },
     drag: { 
       preventDefault: true,
-      filterTaps: true
+      filterTaps: true,
+      eventOptions: { passive: false }
     }
   })
 

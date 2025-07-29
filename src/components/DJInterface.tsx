@@ -9,25 +9,36 @@ import { usePlayer } from '../contexts/PlayerContext'
 
 export const DJInterface: React.FC = () => {
   const { signOut } = useAuth()
-  const { deckA, deckB, crossfaderPosition, setCrossfaderPosition } = usePlayer()
-  const [deckATempo, setDeckATempo] = useState(0)
-  const [deckBTempo, setDeckBTempo] = useState(0)
-  const [channelAVolume, setChannelAVolume] = useState(75)
-  const [channelBVolume, setChannelBVolume] = useState(75)
+  const { 
+    deckA, 
+    deckB, 
+    crossfaderPosition, 
+    setCrossfaderPosition, 
+    channelAVolume, 
+    setChannelAVolume,
+    channelBVolume, 
+    setChannelBVolume
+  } = usePlayer()
+  // Tempo is now handled by the Web Audio players directly
   const [showLibrary, setShowLibrary] = useState(true)
   const [showSettings, setShowSettings] = useState(false)
   const [loadedTracks, setLoadedTracks] = useState<{ A?: any, B?: any }>({})
 
-  // Handle track loading to Spotify players
+  // Debug player state
+  console.log('Deck A state:', deckA.playerState)
+  console.log('Deck B state:', deckB.playerState)
+  console.log('Crossfader position:', crossfaderPosition)
+
+  // Handle track loading to Web Audio players
   const handleTrackSelect = async (track: any, deck: 'A' | 'B') => {
     console.log(`Loading ${track.name} to Deck ${deck}`)
     setLoadedTracks(prev => ({ ...prev, [deck]: track }))
     
-    // Load to Spotify player
+    // Load to Web Audio player
     if (deck === 'A') {
-      await deckA.loadTrack(track.uri)
+      await deckA.loadTrack(track)
     } else {
-      await deckB.loadTrack(track.uri)
+      await deckB.loadTrack(track)
     }
   }
 
@@ -75,8 +86,8 @@ export const DJInterface: React.FC = () => {
                 onPlayPause={deckA.togglePlay}
                 onCue={deckA.cue}
                 onSeek={deckA.seek}
-                tempo={deckATempo}
-                onTempoChange={setDeckATempo}
+                tempo={deckA.tempo}
+                onTempoChange={deckA.setTempoAdjustment}
                 loadedTrack={deckA.playerState.currentTrack || loadedTracks.A}
                 playerState={deckA.playerState}
               />
@@ -92,10 +103,8 @@ export const DJInterface: React.FC = () => {
                 onChannelVolumeChange={(channel, volume) => {
                   if (channel === 'A') {
                     setChannelAVolume(volume)
-                    deckA.setVolume(volume)
                   } else {
                     setChannelBVolume(volume)
-                    deckB.setVolume(volume)
                   }
                 }}
               />
@@ -109,8 +118,8 @@ export const DJInterface: React.FC = () => {
                 onPlayPause={deckB.togglePlay}
                 onCue={deckB.cue}
                 onSeek={deckB.seek}
-                tempo={deckBTempo}
-                onTempoChange={setDeckBTempo}
+                tempo={deckB.tempo}
+                onTempoChange={deckB.setTempoAdjustment}
                 loadedTrack={deckB.playerState.currentTrack || loadedTracks.B}
                 playerState={deckB.playerState}
               />

@@ -1,13 +1,17 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
-import { useSpotifyPlayer } from '../hooks/useSpotifyPlayer'
+import { useWebAudioPlayer } from '../hooks/useWebAudioPlayer'
 
 interface PlayerContextType {
-  deckA: ReturnType<typeof useSpotifyPlayer>
-  deckB: ReturnType<typeof useSpotifyPlayer>
+  deckA: ReturnType<typeof useWebAudioPlayer>
+  deckB: ReturnType<typeof useWebAudioPlayer>
   crossfaderPosition: number
   setCrossfaderPosition: (position: number) => void
   masterVolume: number
   setMasterVolume: (volume: number) => void
+  channelAVolume: number
+  setChannelAVolume: (volume: number) => void
+  channelBVolume: number
+  setChannelBVolume: (volume: number) => void
 }
 
 const PlayerContext = createContext<PlayerContextType | undefined>(undefined)
@@ -21,24 +25,31 @@ export const usePlayer = () => {
 }
 
 export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const deckA = useSpotifyPlayer('Deck A')
-  const deckB = useSpotifyPlayer('Deck B')
+  const deckA = useWebAudioPlayer('Deck A')
+  const deckB = useWebAudioPlayer('Deck B')
   const [crossfaderPosition, setCrossfaderPosition] = useState(0)
   const [masterVolume, setMasterVolume] = useState(75)
+  const [channelAVolume, setChannelAVolume] = useState(75)
+  const [channelBVolume, setChannelBVolume] = useState(75)
 
-  // Apply crossfader logic
+  // Apply crossfader and channel volume logic
   useEffect(() => {
     // Crossfader at -50 = full A, 0 = both, +50 = full B
-    const aDeckVolume = crossfaderPosition <= 0 ? 100 : 100 - (crossfaderPosition * 2)
-    const bDeckVolume = crossfaderPosition >= 0 ? 100 : 100 + (crossfaderPosition * 2)
+    const crossfaderA = crossfaderPosition <= 0 ? 1 : Math.max(0, 1 - (crossfaderPosition / 50))
+    const crossfaderB = crossfaderPosition >= 0 ? 1 : Math.max(0, 1 + (crossfaderPosition / 50))
     
-    // Apply master volume
-    const finalAVolume = (aDeckVolume * masterVolume) / 100
-    const finalBVolume = (bDeckVolume * masterVolume) / 100
+    // Apply all volume controls: channel volume * crossfader * master
+    const finalAVolume = (channelAVolume / 100) * crossfaderA * (masterVolume / 100) * 100
+    const finalBVolume = (channelBVolume / 100) * crossfaderB * (masterVolume / 100) * 100
+    
+    console.log('Volume calculations:', { 
+      channelAVolume, channelBVolume, crossfaderPosition, masterVolume,
+      crossfaderA, crossfaderB, finalAVolume, finalBVolume 
+    })
     
     deckA.setVolume(finalAVolume)
     deckB.setVolume(finalBVolume)
-  }, [crossfaderPosition, masterVolume, deckA, deckB])
+  }, [crossfaderPosition, masterVolume, channelAVolume, channelBVolume, deckA, deckB])
 
   return (
     <PlayerContext.Provider value={{
@@ -47,7 +58,11 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       crossfaderPosition,
       setCrossfaderPosition,
       masterVolume,
-      setMasterVolume
+      setMasterVolume,
+      channelAVolume,
+      setChannelAVolume,
+      channelBVolume,
+      setChannelBVolume
     }}>
       {children}
     </PlayerContext.Provider>
