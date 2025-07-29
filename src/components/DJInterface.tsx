@@ -10,6 +10,7 @@ import { LoopCapture } from './LoopCapture'
 import { EffectsPanel, EffectSettings } from './EffectsPanel'
 import { SetupWizard } from './SetupWizard'
 import { SmartQueue } from './SmartQueue'
+import { MixRecorder } from './MixRecorder'
 import ErrorBoundary from './ErrorBoundary'
 import { Library, Settings, Radio, X, ChevronUp, ChevronDown, HelpCircle, Music, Cloud } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
@@ -216,6 +217,7 @@ export const DJInterface: React.FC = () => {
                 deckBKey={loadedTracks.B?.audio_features?.key}
                 onTransition={handleTransition}
               />
+              <MixRecorder />
             </div>
 
             {/* Right Column - Deck B + Effects */}

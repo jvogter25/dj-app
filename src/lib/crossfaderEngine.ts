@@ -92,6 +92,11 @@ export class CrossfaderEngine {
     this.masterGain.connect(destination)
   }
   
+  // Get master output node for recording
+  getMasterOutput(): GainNode {
+    return this.masterGain
+  }
+  
   // Update crossfader position
   setCrossfaderPosition(position: number) {
     this.crossfaderPosition = Math.max(-50, Math.min(50, position))

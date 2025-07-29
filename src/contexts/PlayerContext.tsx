@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react'
 import { useSpotifyPlayer } from '../hooks/useSpotifyPlayer'
 import { CrossfaderEngine, CrossfaderCurve, TransitionType } from '../lib/crossfaderEngine'
+import { MixRecorder } from '../lib/mixRecorder'
 
 interface PlayerContextType {
   deckA: ReturnType<typeof useSpotifyPlayer>
@@ -16,6 +17,7 @@ interface PlayerContextType {
   setCrossfaderCurve: (curve: CrossfaderCurve) => void
   performTransition: (type: TransitionType, duration?: number) => Promise<void>
   getMixLevels: () => { deckA: number, deckB: number }
+  mixRecorder: MixRecorder | null
 }
 
 const PlayerContext = createContext<PlayerContextType | undefined>(undefined)
@@ -38,17 +40,28 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   
   const audioContextRef = useRef<AudioContext | null>(null)
   const crossfaderEngineRef = useRef<CrossfaderEngine | null>(null)
+  const mixRecorderRef = useRef<MixRecorder | null>(null)
 
-  // Initialize crossfader engine
+  // Initialize crossfader engine and mix recorder
   useEffect(() => {
     if (!audioContextRef.current) {
       audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)()
       crossfaderEngineRef.current = new CrossfaderEngine(audioContextRef.current)
+      mixRecorderRef.current = new MixRecorder(audioContextRef.current)
+      
+      // Connect mix recorder to the crossfader engine's master output
+      if (crossfaderEngineRef.current && mixRecorderRef.current) {
+        const masterOutput = crossfaderEngineRef.current.getMasterOutput()
+        mixRecorderRef.current.connectSource(masterOutput)
+      }
     }
     
     return () => {
       if (crossfaderEngineRef.current) {
         crossfaderEngineRef.current.disconnect()
+      }
+      if (mixRecorderRef.current) {
+        mixRecorderRef.current.disconnect()
       }
     }
   }, [])
@@ -116,7 +129,8 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setChannelBVolume,
       setCrossfaderCurve,
       performTransition,
-      getMixLevels
+      getMixLevels,
+      mixRecorder: mixRecorderRef.current
     }}>
       {children}
     </PlayerContext.Provider>
