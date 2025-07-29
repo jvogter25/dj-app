@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { Deck } from './Deck'
 import { Mixer } from './Mixer'
 import { TrackBrowser } from './TrackBrowser'
+import { GestureHelp } from './GestureHelp'
 import { Library, Settings, Radio, X } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { usePlayer } from '../contexts/PlayerContext'
@@ -73,6 +74,7 @@ export const DJInterface: React.FC = () => {
                 isPlaying={deckA.playerState.isPlaying}
                 onPlayPause={deckA.togglePlay}
                 onCue={deckA.cue}
+                onSeek={deckA.seek}
                 tempo={deckATempo}
                 onTempoChange={setDeckATempo}
                 loadedTrack={deckA.playerState.currentTrack || loadedTracks.A}
@@ -106,6 +108,7 @@ export const DJInterface: React.FC = () => {
                 isPlaying={deckB.playerState.isPlaying}
                 onPlayPause={deckB.togglePlay}
                 onCue={deckB.cue}
+                onSeek={deckB.seek}
                 tempo={deckBTempo}
                 onTempoChange={setDeckBTempo}
                 loadedTrack={deckB.playerState.currentTrack || loadedTracks.B}
@@ -147,6 +150,9 @@ export const DJInterface: React.FC = () => {
               </div>
             </div>
           )}
+
+          {/* Gesture Help */}
+          <GestureHelp />
         </div>
       </main>
     </div>

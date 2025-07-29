@@ -1,5 +1,6 @@
 import React from 'react'
 import { Volume2 } from 'lucide-react'
+import { useGestureControls } from '../hooks/useGestureControls'
 
 interface MixerProps {
   crossfaderPosition: number
@@ -16,6 +17,31 @@ export const Mixer: React.FC<MixerProps> = ({
   channelBVolume,
   onChannelVolumeChange
 }) => {
+  // Gesture controls for faders
+  const channelAGestures = useGestureControls({
+    min: 0,
+    max: 100,
+    value: channelAVolume,
+    onChange: (value) => onChannelVolumeChange('A', value),
+    sensitivity: 0.5
+  })
+
+  const channelBGestures = useGestureControls({
+    min: 0,
+    max: 100,
+    value: channelBVolume,
+    onChange: (value) => onChannelVolumeChange('B', value),
+    sensitivity: 0.5
+  })
+
+  const crossfaderGestures = useGestureControls({
+    min: -50,
+    max: 50,
+    value: crossfaderPosition,
+    onChange: onCrossfaderChange,
+    sensitivity: 0.8
+  })
+
   return (
     <div className="bg-gray-800 rounded-lg p-6">
       <h2 className="text-xl font-bold text-white mb-4 text-center">Mixer</h2>
@@ -27,7 +53,7 @@ export const Mixer: React.FC<MixerProps> = ({
           <div className="mb-2">
             <span className="text-blue-400 font-semibold">Channel A</span>
           </div>
-          <div className="bg-gray-700 rounded-lg p-2 h-40 relative">
+          <div className="bg-gray-700 rounded-lg p-2 h-40 relative touch-none" {...channelAGestures()}>
             <input
               type="range"
               min="0"
@@ -37,7 +63,7 @@ export const Mixer: React.FC<MixerProps> = ({
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
               style={{ writingMode: 'vertical-lr', direction: 'rtl' }}
             />
-            <div className="h-full bg-gray-600 rounded relative">
+            <div className="h-full bg-gray-600 rounded relative pointer-events-none">
               <div 
                 className="absolute bottom-0 w-full bg-blue-500 rounded transition-all"
                 style={{ height: `${channelAVolume}%` }}
@@ -56,7 +82,7 @@ export const Mixer: React.FC<MixerProps> = ({
           <div className="mb-2">
             <span className="text-green-400 font-semibold">Channel B</span>
           </div>
-          <div className="bg-gray-700 rounded-lg p-2 h-40 relative">
+          <div className="bg-gray-700 rounded-lg p-2 h-40 relative touch-none" {...channelBGestures()}>
             <input
               type="range"
               min="0"
@@ -66,7 +92,7 @@ export const Mixer: React.FC<MixerProps> = ({
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
               style={{ writingMode: 'vertical-lr', direction: 'rtl' }}
             />
-            <div className="h-full bg-gray-600 rounded relative">
+            <div className="h-full bg-gray-600 rounded relative pointer-events-none">
               <div 
                 className="absolute bottom-0 w-full bg-green-500 rounded transition-all"
                 style={{ height: `${channelBVolume}%` }}
@@ -84,7 +110,7 @@ export const Mixer: React.FC<MixerProps> = ({
       {/* Crossfader */}
       <div className="bg-gray-700 rounded-lg p-4">
         <div className="mb-2 text-center text-white font-semibold">Crossfader</div>
-        <div className="relative">
+        <div className="relative touch-none" {...crossfaderGestures()}>
           <div className="flex justify-between text-xs text-gray-400 mb-1">
             <span>A</span>
             <span>B</span>

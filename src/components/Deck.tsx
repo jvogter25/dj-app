@@ -1,5 +1,6 @@
 import React from 'react'
 import { Play, Pause, RotateCcw } from 'lucide-react'
+import { useGestureControls, useJogWheel } from '../hooks/useGestureControls'
 
 interface DeckProps {
   deckId: 'A' | 'B'
@@ -8,6 +9,7 @@ interface DeckProps {
   onCue: () => void
   tempo: number
   onTempoChange: (tempo: number) => void
+  onSeek?: (position: number) => void
   loadedTrack?: {
     name: string
     artists: { name: string }[]
@@ -27,10 +29,30 @@ export const Deck: React.FC<DeckProps> = ({
   onCue,
   tempo,
   onTempoChange,
+  onSeek,
   loadedTrack,
   playerState
 }) => {
   const deckColor = deckId === 'A' ? 'blue' : 'green'
+  
+  // Gesture controls for tempo slider
+  const tempoGestures = useGestureControls({
+    min: -10,
+    max: 10,
+    value: tempo,
+    onChange: onTempoChange,
+    sensitivity: 0.3
+  })
+  
+  // Jog wheel for scratching/nudging
+  const jogWheelGestures = useJogWheel((delta) => {
+    if (onSeek && playerState) {
+      // Convert rotation to time adjustment (in milliseconds)
+      const timeAdjustment = delta * 1000 // 1 second per radian
+      const newPosition = Math.max(0, Math.min(playerState.duration, playerState.position + timeAdjustment))
+      onSeek(newPosition)
+    }
+  })
   
   // Calculate progress percentage
   const progress = playerState && playerState.duration > 0 
@@ -53,8 +75,23 @@ export const Deck: React.FC<DeckProps> = ({
              title={playerState?.isReady ? 'Player Ready' : 'Player Not Ready'} />
       </div>
       
+      {/* Jog Wheel */}
+      <div className="flex justify-center mb-4">
+        <div 
+          className={`w-32 h-32 bg-gray-900 rounded-full border-4 border-${deckColor}-500 relative cursor-pointer touch-none select-none`}
+          {...jogWheelGestures()}
+        >
+          <div className="absolute inset-2 bg-gray-800 rounded-full flex items-center justify-center">
+            <div className={`w-1 h-8 bg-${deckColor}-400 rounded`} style={{ transform: `rotate(${(playerState?.position || 0) / 1000}rad)` }} />
+          </div>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span className="text-xs text-gray-400 font-mono">JOG</span>
+          </div>
+        </div>
+      </div>
+
       {/* Waveform Display */}
-      <div className="bg-gray-900 h-32 rounded mb-4 relative overflow-hidden">
+      <div className="bg-gray-900 h-24 rounded mb-4 relative overflow-hidden">
         {loadedTrack ? (
           <>
             {/* Progress bar */}
@@ -63,19 +100,19 @@ export const Deck: React.FC<DeckProps> = ({
               style={{ width: `${progress}%` }}
             />
             {/* Time display */}
-            <div className="absolute bottom-2 left-2 text-xs text-gray-400">
+            <div className="absolute bottom-1 left-2 text-xs text-gray-400">
               {playerState ? formatTime(playerState.position) : '0:00'}
             </div>
-            <div className="absolute bottom-2 right-2 text-xs text-gray-400">
+            <div className="absolute bottom-1 right-2 text-xs text-gray-400">
               {playerState ? formatTime(playerState.duration) : '0:00'}
             </div>
             <div className="flex items-center justify-center h-full">
-              <span className="text-gray-500">Waveform Loading...</span>
+              <span className="text-gray-500 text-sm">Waveform Loading...</span>
             </div>
           </>
         ) : (
           <div className="flex items-center justify-center h-full">
-            <span className="text-gray-500">No Track Loaded</span>
+            <span className="text-gray-500 text-sm">No Track Loaded</span>
           </div>
         )}
       </div>
@@ -114,7 +151,7 @@ export const Deck: React.FC<DeckProps> = ({
       </div>
       
       {/* Tempo Slider */}
-      <div className="mb-4">
+      <div className="mb-4 touch-none" {...tempoGestures()}>
         <div className="flex justify-between text-sm text-gray-400 mb-1">
           <span>Tempo</span>
           <span>{tempo > 0 ? '+' : ''}{tempo.toFixed(1)}%</span>
