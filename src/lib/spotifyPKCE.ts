@@ -131,6 +131,7 @@ export const spotifyAuthPKCE = {
         email: profile.email,
         password: profile.id,
         options: {
+          emailRedirectTo: 'https://dj-app-kappa.vercel.app',
           data: {
             spotify_id: profile.id,
             display_name: profile.display_name,

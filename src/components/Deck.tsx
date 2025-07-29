@@ -8,6 +8,11 @@ interface DeckProps {
   onCue: () => void
   tempo: number
   onTempoChange: (tempo: number) => void
+  loadedTrack?: {
+    name: string
+    artists: { name: string }[]
+    album: { images: { url: string }[] }
+  }
 }
 
 export const Deck: React.FC<DeckProps> = ({
@@ -16,7 +21,8 @@ export const Deck: React.FC<DeckProps> = ({
   onPlayPause,
   onCue,
   tempo,
-  onTempoChange
+  onTempoChange,
+  loadedTrack
 }) => {
   const deckColor = deckId === 'A' ? 'blue' : 'green'
   
@@ -33,8 +39,19 @@ export const Deck: React.FC<DeckProps> = ({
       
       {/* Track Info */}
       <div className="mb-4">
-        <div className="text-white font-semibold">No Track Loaded</div>
-        <div className="text-gray-400 text-sm">Select a track to begin</div>
+        {loadedTrack ? (
+          <>
+            <div className="text-white font-semibold truncate">{loadedTrack.name}</div>
+            <div className="text-gray-400 text-sm truncate">
+              {loadedTrack.artists.map(a => a.name).join(', ')}
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="text-white font-semibold">No Track Loaded</div>
+            <div className="text-gray-400 text-sm">Select a track to begin</div>
+          </>
+        )}
       </div>
       
       {/* Transport Controls */}
