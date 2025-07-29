@@ -1,6 +1,13 @@
 // Extension Bridge - Handles communication with DJ Studio Chrome Extension
 // This receives audio streams from Spotify tabs and processes them
 
+// Chrome extension API types
+declare global {
+  interface Window {
+    chrome?: any
+  }
+}
+
 interface ExtensionMessage {
   type: string
   tabId?: number
@@ -113,8 +120,8 @@ export class ExtensionBridge {
     }
     
     // Send via Chrome runtime messaging
-    if (chrome?.runtime?.sendMessage) {
-      chrome.runtime.sendMessage(this.extensionId, message)
+    if (window.chrome?.runtime?.sendMessage) {
+      window.chrome.runtime.sendMessage(this.extensionId, message)
     }
   }
   
@@ -133,13 +140,13 @@ export class ExtensionBridge {
       // Set up one-time listener for response
       const listener = (request: any, sender: any, sendResponse: any) => {
         if (request.tabs) {
-          chrome.runtime.onMessage.removeListener(listener)
+          window.chrome.runtime.onMessage.removeListener(listener)
           resolve(request.tabs)
         }
       }
       
-      if (chrome?.runtime?.onMessage) {
-        chrome.runtime.onMessage.addListener(listener)
+      if (window.chrome?.runtime?.onMessage) {
+        window.chrome.runtime.onMessage.addListener(listener)
       } else {
         resolve([])
       }
@@ -170,12 +177,12 @@ export class ExtensionBridge {
     try {
       // Try to ping the extension
       return new Promise((resolve) => {
-        if (!chrome?.runtime?.sendMessage) {
+        if (!window.chrome?.runtime?.sendMessage) {
           resolve(false)
           return
         }
         
-        chrome.runtime.sendMessage(this.extensionId, { type: 'PING' }, (response) => {
+        window.chrome.runtime.sendMessage(this.extensionId, { type: 'PING' }, (response: any) => {
           resolve(!!response)
         })
         

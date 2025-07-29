@@ -69,6 +69,18 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     case 'GET_TRACK_INFO':
       sendResponse(getCurrentTrackInfo())
       break
+      
+    case 'GET_PLAYLIST_TRACKS':
+      getPlaylistTracks()
+        .then(tracks => sendResponse({ tracks }))
+        .catch(error => sendResponse({ tracks: [], error: error.message }))
+      return true // Keep channel open for async response
+      
+    case 'PLAY_TRACK':
+      playTrack(request.trackUri)
+        .then(() => sendResponse({ success: true }))
+        .catch(error => sendResponse({ success: false, error: error.message }))
+      return true
   }
 })
 
@@ -179,3 +191,120 @@ chrome.storage.local.get(['isCapturing'], (result) => {
     updateIndicator('capturing')
   }
 })
+
+// Get all tracks from current playlist page
+async function getPlaylistTracks() {
+  console.log('Extracting playlist tracks...')
+  
+  // Wait for tracks to load
+  await waitForElement('[data-testid="tracklist-row"]', 10000)
+  
+  const trackRows = document.querySelectorAll('[data-testid="tracklist-row"]')
+  const tracks = []
+  
+  for (const row of trackRows) {
+    try {
+      // Extract track information from DOM
+      const nameElement = row.querySelector('[data-testid="internal-track-link"]')
+      const artistElements = row.querySelectorAll('[data-testid="internal-track-link"]:not([dir="auto"])')
+      const durationElement = row.querySelector('[data-testid="duration"]')
+      
+      if (nameElement) {
+        const trackName = nameElement.textContent.trim()
+        const artistName = artistElements.length > 1 ? artistElements[1].textContent.trim() : 'Unknown Artist'
+        const duration = durationElement ? durationElement.textContent.trim() : '0:00'
+        
+        // Extract Spotify ID from URL if possible
+        const trackLink = nameElement.href
+        const spotifyIdMatch = trackLink?.match(/\/track\/([a-zA-Z0-9]+)/)
+        const spotifyId = spotifyIdMatch ? spotifyIdMatch[1] : null
+        
+        tracks.push({
+          id: spotifyId,
+          name: trackName,
+          artist: artistName,
+          duration_ms: parseDurationToMs(duration),
+          uri: spotifyId ? `spotify:track:${spotifyId}` : null
+        })
+      }
+    } catch (error) {
+      console.error('Error extracting track data:', error)
+    }
+  }
+  
+  console.log(`Extracted ${tracks.length} tracks`)
+  return tracks
+}
+
+// Play a specific track
+async function playTrack(trackUri) {
+  console.log('Playing track:', trackUri)
+  
+  try {
+    // Find the track in the current playlist
+    const trackRows = document.querySelectorAll('[data-testid="tracklist-row"]')
+    
+    for (const row of trackRows) {
+      const trackLink = row.querySelector('[data-testid="internal-track-link"]')
+      if (trackLink && trackLink.href.includes(trackUri.split(':')[2])) {
+        // Click the play button for this track
+        const playButton = row.querySelector('[data-testid="play-button"]') || 
+                          row.querySelector('button[aria-label*="Play"]')
+        
+        if (playButton) {
+          playButton.click()
+          
+          // Wait for playback to start
+          await new Promise(resolve => setTimeout(resolve, 1000))
+          return
+        }
+      }
+    }
+    
+    throw new Error('Track not found in current playlist')
+    
+  } catch (error) {
+    console.error('Error playing track:', error)
+    throw error
+  }
+}
+
+// Wait for element to appear in DOM
+function waitForElement(selector, timeout = 5000) {
+  return new Promise((resolve, reject) => {
+    const element = document.querySelector(selector)
+    if (element) {
+      resolve(element)
+      return
+    }
+    
+    const observer = new MutationObserver(() => {
+      const element = document.querySelector(selector)
+      if (element) {
+        observer.disconnect()
+        resolve(element)
+      }
+    })
+    
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    })
+    
+    setTimeout(() => {
+      observer.disconnect()
+      reject(new Error(`Element ${selector} not found within ${timeout}ms`))
+    }, timeout)
+  })
+}
+
+// Parse duration string to milliseconds
+function parseDurationToMs(duration) {
+  const parts = duration.split(':').map(Number)
+  if (parts.length === 2) {
+    return (parts[0] * 60 + parts[1]) * 1000
+  } else if (parts.length === 3) {
+    return (parts[0] * 3600 + parts[1] * 60 + parts[2]) * 1000
+  }
+  return 0
+}

@@ -1,5 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useAuth } from '../contexts/AuthContext'
+import { AudioEffectsProcessor } from '../lib/audioEffects'
+import { getLoopCaptureEngine, LoopCaptureEngine, Loop } from '../lib/loopCapture'
 
 interface SpotifyPlayerState {
   isReady: boolean
@@ -29,7 +31,10 @@ export const useSpotifyPlayer = (playerId: string) => {
   const sourceNodeRef = useRef<MediaElementAudioSourceNode | null>(null)
   const gainNodeRef = useRef<GainNode | null>(null)
   const audioElementRef = useRef<HTMLAudioElement | null>(null)
+  const effectsProcessorRef = useRef<AudioEffectsProcessor | null>(null)
+  const loopCaptureEngineRef = useRef<LoopCaptureEngine | null>(null)
   const [isEnhanced, setIsEnhanced] = useState(false)
+  const [loops, setLoops] = useState<Loop[]>([])
 
   // Initialize player
   useEffect(() => {
@@ -280,12 +285,15 @@ export const useSpotifyPlayer = (playerId: string) => {
       // Create Web Audio nodes
       const source = audioContext.createMediaElementSource(audioElement)
       const gainNode = audioContext.createGain()
+      const effectsProcessor = new AudioEffectsProcessor(audioContext)
       
       sourceNodeRef.current = source
       gainNodeRef.current = gainNode
+      effectsProcessorRef.current = effectsProcessor
 
-      // Connect the audio graph
-      source.connect(gainNode)
+      // Connect the audio graph: source -> effects -> gain -> destination
+      effectsProcessor.connectSource(source)
+      effectsProcessor.connectToOutput(gainNode)
       gainNode.connect(audioContext.destination)
 
       // Set initial volume
@@ -342,9 +350,116 @@ export const useSpotifyPlayer = (playerId: string) => {
     // Would need to use Web Audio API with local files or preview URLs
   }, [playerId])
 
+  // EQ Controls
+  const setEQ = useCallback((eq: { high: number; mid: number; low: number }) => {
+    if (!effectsProcessorRef.current) {
+      console.warn(`[${playerId}] No effects processor available`)
+      return
+    }
+    effectsProcessorRef.current.setEQ(eq)
+  }, [playerId])
+
+  const setLowEQ = useCallback((gain: number) => {
+    if (!effectsProcessorRef.current) return
+    effectsProcessorRef.current.setLowEQ(gain)
+  }, [])
+
+  const setMidEQ = useCallback((gain: number) => {
+    if (!effectsProcessorRef.current) return
+    effectsProcessorRef.current.setMidEQ(gain)
+  }, [])
+
+  const setHighEQ = useCallback((gain: number) => {
+    if (!effectsProcessorRef.current) return
+    effectsProcessorRef.current.setHighEQ(gain)
+  }, [])
+
+  // Filter Controls
+  const setFilters = useCallback((filters: any) => {
+    if (!effectsProcessorRef.current) return
+    effectsProcessorRef.current.setFilters(filters)
+  }, [])
+  
+  // Loop Capture Functions
+  const captureLoop = useCallback(async (startTime: number, endTime: number, trailOff: number) => {
+    if (!audioContextRef.current) {
+      console.warn(`[${playerId}] No audio context for loop capture`)
+      return null
+    }
+    
+    // Initialize loop capture engine if needed
+    if (!loopCaptureEngineRef.current) {
+      loopCaptureEngineRef.current = getLoopCaptureEngine(audioContextRef.current)
+    }
+    
+    // For now, we'll capture from the preview URL if available
+    // In a real implementation, we'd capture from the actual playing audio
+    if (audioElementRef.current && playerState.currentTrack?.preview_url) {
+      try {
+        // Fetch and decode the audio
+        const response = await fetch(playerState.currentTrack.preview_url)
+        const arrayBuffer = await response.arrayBuffer()
+        const audioBuffer = await audioContextRef.current.decodeAudioData(arrayBuffer)
+        
+        // Capture the loop
+        const loop = await loopCaptureEngineRef.current.captureLoop(
+          audioBuffer,
+          startTime,
+          endTime,
+          playerId === 'Deck A' ? 'A' : 'B'
+        )
+        
+        // Apply trail-off if specified
+        if (trailOff > 0) {
+          loopCaptureEngineRef.current.applyTrailOff(loop.id, trailOff)
+        }
+        
+        // Update loops state
+        setLoops(prev => [...prev, loop])
+        
+        console.log(`[${playerId}] Loop captured:`, loop)
+        return loop
+      } catch (error) {
+        console.error(`[${playerId}] Error capturing loop:`, error)
+        return null
+      }
+    }
+    
+    console.warn(`[${playerId}] No audio available for loop capture`)
+    return null
+  }, [playerId, playerState.currentTrack])
+  
+  const playLoop = useCallback((loopId: string, loop: boolean = true) => {
+    if (!audioContextRef.current || !loopCaptureEngineRef.current || !gainNodeRef.current) {
+      console.warn(`[${playerId}] Cannot play loop - missing audio components`)
+      return
+    }
+    
+    loopCaptureEngineRef.current.playLoop(loopId, gainNodeRef.current, loop)
+    console.log(`[${playerId}] Playing loop:`, loopId)
+  }, [playerId])
+  
+  const stopLoop = useCallback((loopId: string) => {
+    if (!loopCaptureEngineRef.current) return
+    
+    loopCaptureEngineRef.current.stopLoop(loopId)
+    console.log(`[${playerId}] Stopped loop:`, loopId)
+  }, [playerId])
+  
+  const deleteLoop = useCallback((loopId: string) => {
+    if (!loopCaptureEngineRef.current) return
+    
+    loopCaptureEngineRef.current.deleteLoop(loopId)
+    setLoops(prev => prev.filter(l => l.id !== loopId))
+    console.log(`[${playerId}] Deleted loop:`, loopId)
+  }, [playerId])
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
+      if (effectsProcessorRef.current) {
+        effectsProcessorRef.current.disconnect()
+      }
       if (audioElementRef.current && audioElementRef.current.parentNode) {
         audioElementRef.current.parentNode.removeChild(audioElementRef.current)
       }
@@ -369,6 +484,18 @@ export const useSpotifyPlayer = (playerId: string) => {
     cue,
     setTempoAdjustment,
     enableEnhancedMode,
-    disableEnhancedMode
+    disableEnhancedMode,
+    // EQ controls
+    setEQ,
+    setLowEQ,
+    setMidEQ,
+    setHighEQ,
+    setFilters,
+    // Loop controls
+    loops,
+    captureLoop,
+    playLoop,
+    stopLoop,
+    deleteLoop
   }
 }

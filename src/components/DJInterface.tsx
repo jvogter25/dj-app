@@ -70,9 +70,18 @@ export const DJInterface: React.FC = () => {
   }
 
   // Handle loop capture
-  const handleLoopCapture = (deck: 'A' | 'B', start: number, end: number, trailOff: number) => {
+  const handleLoopCapture = async (deck: 'A' | 'B', start: number, end: number, trailOff: number) => {
     console.log(`Capturing loop on deck ${deck}: ${start}s - ${end}s with ${trailOff}s trail`)
-    // TODO: Implement loop capture logic
+    
+    // Convert times from milliseconds to seconds
+    const startSeconds = start / 1000
+    const endSeconds = end / 1000
+    
+    if (deck === 'A') {
+      await deckA.captureLoop(startSeconds, endSeconds, trailOff)
+    } else {
+      await deckB.captureLoop(startSeconds, endSeconds, trailOff)
+    }
   }
 
   // Handle effects
@@ -144,6 +153,7 @@ export const DJInterface: React.FC = () => {
                   isEnhanced: deckA.isEnhanced
                 } : null}
                 playerState={deckA.playerState}
+                onEQChange={deckA.setEQ}
               />
               <LoopCapture
                 deckId="A"
@@ -199,6 +209,7 @@ export const DJInterface: React.FC = () => {
                   isEnhanced: deckB.isEnhanced
                 } : null}
                 playerState={deckB.playerState}
+                onEQChange={deckB.setEQ}
               />
               <LoopCapture
                 deckId="B"

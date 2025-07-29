@@ -1,6 +1,9 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { Play, Pause, RotateCcw } from 'lucide-react'
 import { useGestureControls, useJogWheel } from '../hooks/useGestureControls'
+import { WaveformDisplay } from './WaveformDisplay'
+import { waveformGenerator, WaveformData } from '../lib/waveformGenerator'
+import { processedTracksService } from '../lib/processedTracksService'
 
 interface DeckProps {
   deckId: 'A' | 'B'
@@ -11,17 +14,21 @@ interface DeckProps {
   onTempoChange: (tempo: number) => void
   onSeek?: (position: number) => void
   loadedTrack?: {
+    id?: string
     name: string
     artists: { name: string }[]
     album: { images: { url: string }[] }
     bpm?: number
     isEnhanced?: boolean
+    preview_url?: string
+    spotify_id?: string
   }
   playerState?: {
     position: number
     duration: number
     isReady: boolean
   }
+  onEQChange?: (eq: { high: number; mid: number; low: number }) => void
 }
 
 export const Deck: React.FC<DeckProps> = ({
@@ -33,7 +40,8 @@ export const Deck: React.FC<DeckProps> = ({
   onTempoChange,
   onSeek,
   loadedTrack,
-  playerState
+  playerState,
+  onEQChange
 }) => {
   const deckColor = deckId === 'A' ? 'blue' : 'green'
   
@@ -41,6 +49,68 @@ export const Deck: React.FC<DeckProps> = ({
   const [highEQ, setHighEQ] = React.useState(0)
   const [midEQ, setMidEQ] = React.useState(0)
   const [lowEQ, setLowEQ] = React.useState(0)
+  
+  // Waveform state
+  const [waveformData, setWaveformData] = useState<WaveformData | null>(null)
+  const [waveformLoading, setWaveformLoading] = useState(false)
+  
+  // Generate waveform when track loads
+  useEffect(() => {
+    const generateWaveform = async () => {
+      if (!loadedTrack) {
+        setWaveformData(null)
+        return
+      }
+      
+      setWaveformLoading(true)
+      
+      try {
+        // First check if we have a processed track with waveform
+        if (loadedTrack.spotify_id || loadedTrack.id) {
+          const spotifyId = loadedTrack.spotify_id || loadedTrack.id
+          
+          // Check cache first
+          const cachedWaveform = await waveformGenerator.getCachedWaveform(spotifyId!)
+          if (cachedWaveform) {
+            setWaveformData(cachedWaveform)
+            setWaveformLoading(false)
+            return
+          }
+          
+          // Check processed tracks database
+          const processedTrack = await processedTracksService.getProcessedTrack(spotifyId!)
+          if (processedTrack?.waveform) {
+            setWaveformData(processedTrack.waveform)
+            // Cache it
+            await waveformGenerator.cacheWaveform(spotifyId!, processedTrack.waveform)
+            setWaveformLoading(false)
+            return
+          }
+        }
+        
+        // For preview URLs (30 second clips), generate waveform
+        if (loadedTrack.preview_url) {
+          const waveform = await waveformGenerator.generateFromUrl(loadedTrack.preview_url)
+          setWaveformData(waveform)
+          
+          // Cache if we have an ID
+          if (loadedTrack.spotify_id || loadedTrack.id) {
+            await waveformGenerator.cacheWaveform(loadedTrack.spotify_id || loadedTrack.id!, waveform)
+          }
+        } else {
+          // No waveform available
+          setWaveformData(null)
+        }
+      } catch (error) {
+        console.error('Error generating waveform:', error)
+        setWaveformData(null)
+      } finally {
+        setWaveformLoading(false)
+      }
+    }
+    
+    generateWaveform()
+  }, [loadedTrack])
   
   // Gesture controls for tempo slider
   const tempoGestures = useGestureControls({
@@ -98,31 +168,23 @@ export const Deck: React.FC<DeckProps> = ({
       </div>
 
       {/* Waveform Display */}
-      <div className="bg-gray-900 h-24 rounded mb-4 relative overflow-hidden">
+      <div className="mb-4 relative">
         {loadedTrack ? (
           <>
-            {/* Waveform visualization placeholder */}
-            <div className="absolute inset-0 flex items-end justify-center px-2">
-              {/* Generate fake waveform bars */}
-              {Array.from({ length: 60 }, (_, i) => {
-                const height = Math.sin(i * 0.2) * 30 + Math.random() * 40 + 20
-                const isPlayed = (i / 60) * 100 < progress
-                return (
-                  <div
-                    key={i}
-                    className={`flex-1 mx-px transition-all duration-100 ${
-                      isPlayed ? `bg-${deckColor}-400` : 'bg-gray-600'
-                    }`}
-                    style={{ height: `${height}%` }}
-                  />
-                )
-              })}
-            </div>
-            {/* Progress line */}
-            <div 
-              className={`absolute top-0 bottom-0 w-0.5 bg-white transition-all duration-100`}
-              style={{ left: `${progress}%` }}
+            <WaveformDisplay
+              waveformData={waveformLoading ? null : waveformData}
+              progress={progress / 100}
+              height={96}
+              color={deckColor === 'blue' ? '#3B82F6' : '#10B981'}
+              progressColor={deckColor === 'blue' ? '#60A5FA' : '#34D399'}
+              onSeek={(progress) => {
+                if (onSeek && playerState) {
+                  onSeek(progress * playerState.duration)
+                }
+              }}
+              className="mb-2"
             />
+            
             {/* Time display overlay */}
             <div className="absolute bottom-1 left-2 text-xs text-white font-mono bg-black bg-opacity-50 px-1 rounded">
               {playerState ? formatTime(playerState.position) : '0:00'}
@@ -130,15 +192,25 @@ export const Deck: React.FC<DeckProps> = ({
             <div className="absolute bottom-1 right-2 text-xs text-white font-mono bg-black bg-opacity-50 px-1 rounded">
               {playerState ? formatTime(playerState.duration) : '0:00'}
             </div>
+            
             {/* Status indicator */}
             {!playerState?.isReady && (
               <div className="absolute top-2 left-2 text-xs text-yellow-400 bg-black bg-opacity-75 rounded px-2 py-1">
                 Activating Spotify device...
               </div>
             )}
+            
+            {/* No waveform indicator */}
+            {!waveformLoading && !waveformData && (
+              <div className="absolute inset-0 flex items-center justify-center bg-gray-900 bg-opacity-75 rounded">
+                <span className="text-gray-500 text-sm">
+                  {loadedTrack.preview_url ? 'Generating waveform...' : 'Waveform not available'}
+                </span>
+              </div>
+            )}
           </>
         ) : (
-          <div className="flex items-center justify-center h-full">
+          <div className="bg-gray-900 h-24 rounded flex items-center justify-center">
             <span className="text-gray-500 text-sm">No Track Loaded</span>
           </div>
         )}
@@ -229,6 +301,16 @@ export const Deck: React.FC<DeckProps> = ({
                   const newValue = parseInt(e.target.value)
                   setValue(newValue)
                   console.log(`[${deckId}] ${band} EQ:`, newValue)
+                  
+                  // Update EQ in audio processor
+                  if (onEQChange) {
+                    const newEQ = {
+                      high: band === 'High' ? newValue : highEQ,
+                      mid: band === 'Mid' ? newValue : midEQ,
+                      low: band === 'Low' ? newValue : lowEQ
+                    }
+                    onEQChange(newEQ)
+                  }
                 }}
                 className="absolute inset-0 w-12 h-12 opacity-0 cursor-pointer mx-auto"
                 title={`${band} frequency adjustment`}
