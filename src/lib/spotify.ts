@@ -41,7 +41,10 @@ export const spotifyAuth = {
       show_dialog: 'true'
     })
     
-    return `https://accounts.spotify.com/authorize?${params.toString()}`
+    const authUrl = `https://accounts.spotify.com/authorize?${params.toString()}`
+    console.log('Generated Spotify auth URL:', authUrl)
+    console.log('URL params:', params.toString())
+    return authUrl
   },
   
   handleCallback: async (hash: string) => {
