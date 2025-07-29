@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { spotifyAuth } from '../lib/spotify'
+import { spotifyAuthPKCE } from '../lib/spotifyPKCE'
 
 export const AuthCallback: React.FC = () => {
   const navigate = useNavigate()
@@ -9,23 +9,18 @@ export const AuthCallback: React.FC = () => {
   useEffect(() => {
     const handleCallback = async () => {
       try {
-        const hash = window.location.hash
-        if (!hash) {
+        // PKCE uses query params, not hash
+        const queryString = window.location.search
+        if (!queryString) {
           throw new Error('No authentication data received')
         }
 
-        await spotifyAuth.handleCallback(hash)
+        await spotifyAuthPKCE.handleCallback(queryString)
         navigate('/')
       } catch (err) {
         console.error('Authentication error:', err)
         const errorMessage = err instanceof Error ? err.message : 'Authentication failed'
-        
-        // If it's a Spotify error, show more details
-        if (errorMessage.includes('unsupported_response_type')) {
-          setError('Spotify app configuration error: Please ensure your Spotify app has Web API enabled')
-        } else {
-          setError(errorMessage)
-        }
+        setError(errorMessage)
       }
     }
 

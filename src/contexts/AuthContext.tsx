@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { User } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
-import { spotifyAuth } from '../lib/spotify'
+import { spotifyAuthPKCE } from '../lib/spotifyPKCE'
 
 interface AuthContextType {
   user: User | null
@@ -31,7 +31,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null)
       if (session?.user) {
-        spotifyAuth.getStoredToken().then(token => {
+        spotifyAuthPKCE.getStoredToken().then(token => {
           setSpotifyToken(token ?? null)
         })
       }
@@ -42,7 +42,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null)
       if (session?.user) {
-        spotifyAuth.getStoredToken().then(token => {
+        spotifyAuthPKCE.getStoredToken().then(token => {
           setSpotifyToken(token ?? null)
         })
       } else {
@@ -53,8 +53,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => subscription.unsubscribe()
   }, [])
 
-  const signInWithSpotify = () => {
-    window.location.href = spotifyAuth.getAuthUrl()
+  const signInWithSpotify = async () => {
+    const authUrl = await spotifyAuthPKCE.getAuthUrl()
+    window.location.href = authUrl
   }
 
   const signOut = async () => {
