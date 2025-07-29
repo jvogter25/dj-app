@@ -8,6 +8,8 @@ interface MixerProps {
   channelAVolume: number
   channelBVolume: number
   onChannelVolumeChange: (channel: 'A' | 'B', volume: number) => void
+  masterVolume: number
+  onMasterVolumeChange: (volume: number) => void
 }
 
 export const Mixer: React.FC<MixerProps> = ({
@@ -15,7 +17,9 @@ export const Mixer: React.FC<MixerProps> = ({
   onCrossfaderChange,
   channelAVolume,
   channelBVolume,
-  onChannelVolumeChange
+  onChannelVolumeChange,
+  masterVolume,
+  onMasterVolumeChange
 }) => {
   // Gesture controls for faders
   const channelAGestures = useGestureControls({
@@ -40,6 +44,14 @@ export const Mixer: React.FC<MixerProps> = ({
     value: crossfaderPosition,
     onChange: onCrossfaderChange,
     sensitivity: 0.8
+  })
+
+  const masterVolumeGestures = useGestureControls({
+    min: 0,
+    max: 100,
+    value: masterVolume,
+    onChange: onMasterVolumeChange,
+    sensitivity: 0.5
   })
 
   return (
@@ -134,10 +146,32 @@ export const Mixer: React.FC<MixerProps> = ({
       </div>
       
       {/* Master Output */}
-      <div className="mt-4 text-center">
-        <div className="flex items-center justify-center gap-2 text-white">
+      <div className="mt-4">
+        <div className="flex items-center justify-center gap-2 text-white mb-2">
           <Volume2 className="w-5 h-5" />
           <span className="font-semibold">Master Output</span>
+        </div>
+        <div className="bg-gray-700 rounded-lg p-4">
+          <div className="max-w-xs mx-auto">
+            <div className="touch-none" {...masterVolumeGestures()}>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={masterVolume}
+                onChange={(e) => onMasterVolumeChange(parseInt(e.target.value))}
+                className="w-full h-3 bg-gray-600 rounded-lg appearance-none cursor-pointer"
+                style={{
+                  background: `linear-gradient(to right, 
+                    rgb(168, 85, 247) 0%, 
+                    rgb(168, 85, 247) ${masterVolume}%, 
+                    rgb(75, 85, 99) ${masterVolume}%, 
+                    rgb(75, 85, 99) 100%)`
+                }}
+              />
+            </div>
+            <div className="text-center mt-2 text-sm text-gray-400">{masterVolume}%</div>
+          </div>
         </div>
       </div>
     </div>

@@ -26,6 +26,8 @@ export const DJInterface: React.FC = () => {
     setChannelAVolume,
     channelBVolume, 
     setChannelBVolume,
+    masterVolume,
+    setMasterVolume,
     performTransition
   } = usePlayer()
   // Tempo is now handled by the Web Audio players directly
@@ -204,6 +206,8 @@ export const DJInterface: React.FC = () => {
                     setChannelBVolume(volume)
                   }
                 }}
+                masterVolume={masterVolume}
+                onMasterVolumeChange={setMasterVolume}
               />
               <SmartTransition
                 deckATempo={loadedTracks.A?.bpm}
