@@ -81,6 +81,7 @@ export const TrackBrowser: React.FC<TrackBrowserProps> = ({ onTrackSelect }) => 
     if (!spotifyToken || trackIds.length === 0) return
     
     try {
+      console.log(`Fetching audio features for ${trackIds.length} tracks`)
       const response = await fetch(
         `https://api.spotify.com/v1/audio-features?ids=${trackIds.join(',')}`,
         {
@@ -90,7 +91,11 @@ export const TrackBrowser: React.FC<TrackBrowserProps> = ({ onTrackSelect }) => 
         }
       )
       
-      if (!response.ok) throw new Error('Failed to fetch audio features')
+      if (!response.ok) {
+        console.error('Audio features API error:', response.status)
+        // Don't throw error - continue without audio features
+        return
+      }
       
       const data = await response.json()
       const newCache = new Map(audioFeaturesCache)
@@ -102,15 +107,21 @@ export const TrackBrowser: React.FC<TrackBrowserProps> = ({ onTrackSelect }) => 
       })
       
       setAudioFeaturesCache(newCache)
+      console.log(`Cached audio features for ${data.audio_features.filter((f: any) => f).length} tracks`)
     } catch (error) {
       console.error('Error fetching audio features:', error)
+      // Don't let audio features failure break track loading
     }
   }, [spotifyToken, audioFeaturesCache])
 
   // Fetch user's saved tracks
   const fetchUserTracks = async () => {
-    if (!spotifyToken) return
+    if (!spotifyToken) {
+      console.log('No Spotify token available')
+      return
+    }
     
+    console.log('Fetching user tracks...')
     setLoading(true)
     try {
       const response = await fetch('https://api.spotify.com/v1/me/tracks?limit=50', {
@@ -119,15 +130,24 @@ export const TrackBrowser: React.FC<TrackBrowserProps> = ({ onTrackSelect }) => 
         }
       })
       
-      if (!response.ok) throw new Error('Failed to fetch tracks')
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('Spotify API error:', response.status, errorText)
+        throw new Error(`Failed to fetch tracks: ${response.status}`)
+      }
       
       const data = await response.json()
-      const trackList = data.items.map((item: any) => item.track)
+      console.log('Spotify tracks response:', data)
+      
+      const trackList = data.items.map((item: any) => item.track).filter((track: any) => track)
+      console.log(`Loaded ${trackList.length} tracks`)
       setTracks(trackList)
       
       // Fetch audio features for these tracks
-      const trackIds = trackList.map((track: SpotifyTrack) => track.id)
-      await fetchAudioFeatures(trackIds)
+      if (trackList.length > 0) {
+        const trackIds = trackList.map((track: SpotifyTrack) => track.id)
+        await fetchAudioFeatures(trackIds)
+      }
     } catch (error) {
       console.error('Error fetching tracks:', error)
     } finally {
@@ -313,6 +333,7 @@ export const TrackBrowser: React.FC<TrackBrowserProps> = ({ onTrackSelect }) => 
   }
 
   useEffect(() => {
+    console.log('TrackBrowser useEffect triggered:', { viewMode, spotifyToken: !!spotifyToken })
     if (viewMode === 'library') {
       fetchUserTracks()
     } else if (viewMode === 'playlists') {
