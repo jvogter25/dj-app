@@ -329,7 +329,10 @@ export const TrackBrowser: React.FC<TrackBrowserProps> = ({ onTrackSelect }) => 
 
   // Fetch user's playlists
   const fetchPlaylists = useCallback(async () => {
-    if (!spotifyToken) return
+    if (!spotifyToken) {
+      console.log('fetchPlaylists: No token available')
+      return
+    }
     
     console.log('fetchPlaylists called - starting playlist fetch')
     setLoading(true)
@@ -337,7 +340,10 @@ export const TrackBrowser: React.FC<TrackBrowserProps> = ({ onTrackSelect }) => 
     setPlaylists([]) // Clear old playlists to prevent stale data
     
     try {
+      console.log('Making API request to fetch playlists...')
       const response = await spotifyFetch('https://api.spotify.com/v1/me/playlists?limit=50')
+      
+      console.log('Response status:', response.status)
       
       if (!response.ok) {
         const errorText = await response.text()
@@ -348,14 +354,23 @@ export const TrackBrowser: React.FC<TrackBrowserProps> = ({ onTrackSelect }) => 
       
       const data = await response.json()
       console.log('Playlists API response:', data)
+      console.log('Playlists items:', data.items)
       console.log(`Loaded ${data.items?.length || 0} playlists`)
-      setPlaylists(data.items || [])
+      
+      if (data.items && Array.isArray(data.items)) {
+        console.log('Setting playlists state with items:', data.items)
+        setPlaylists(data.items)
+      } else {
+        console.warn('No items array in response')
+        setPlaylists([])
+      }
       setApiError(null)
     } catch (error) {
       console.error('Error fetching playlists:', error)
       setApiError(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`)
       setPlaylists([]) // Ensure empty array on error
     } finally {
+      console.log('fetchPlaylists complete, loading set to false')
       setLoading(false)
     }
   }, [spotifyToken, spotifyFetch])
@@ -770,7 +785,7 @@ export const TrackBrowser: React.FC<TrackBrowserProps> = ({ onTrackSelect }) => 
         )}
 
         {/* Manual Refresh Button */}
-        {(viewMode === 'library' || viewMode === 'recent') && (
+        {(viewMode === 'library' || viewMode === 'recent' || viewMode === 'playlists') && (
           <div className="mb-2 px-2">
             <button
               onClick={() => {
@@ -778,12 +793,14 @@ export const TrackBrowser: React.FC<TrackBrowserProps> = ({ onTrackSelect }) => 
                   fetchUserTracks()
                 } else if (viewMode === 'recent') {
                   fetchRecentlyPlayed()
+                } else if (viewMode === 'playlists') {
+                  fetchPlaylists()
                 }
               }}
               className="w-full py-1 bg-purple-600 hover:bg-purple-700 text-white rounded text-sm transition-colors"
               disabled={loading}
             >
-              {loading ? 'Loading...' : `Refresh ${viewMode === 'library' ? 'Liked' : 'Recent'}`}
+              {loading ? 'Loading...' : `Refresh ${viewMode === 'library' ? 'Liked' : viewMode === 'recent' ? 'Recent' : 'Playlists'}`}
             </button>
           </div>
         )}
@@ -821,22 +838,38 @@ export const TrackBrowser: React.FC<TrackBrowserProps> = ({ onTrackSelect }) => 
           </div>
         ) : viewMode === 'playlists' && !selectedPlaylist ? (
           /* Playlist Grid */
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {playlists.map((playlist) => (
+          <div className="p-2">
+            {playlists.length === 0 ? (
+              <div className="text-center text-gray-500 py-8">
+                <List className="w-12 h-12 mx-auto mb-2" />
+                <p>No playlists found</p>
+                <p className="text-xs mt-2">Try refreshing or check your Spotify account</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {playlists.map((playlist) => (
               <div
                 key={playlist.id}
                 onClick={() => { setSelectedPlaylist(playlist.id); fetchPlaylistTracks(playlist.id) }}
                 className="bg-gray-700 hover:bg-gray-600 rounded-lg p-3 cursor-pointer transition-colors"
               >
-                <img
-                  src={playlist.images[0]?.url || '/placeholder-album.png'}
-                  alt={playlist.name}
-                  className="w-full aspect-square rounded mb-2"
-                />
+                {playlist.images && playlist.images.length > 0 && playlist.images[0]?.url ? (
+                  <img
+                    src={playlist.images[0].url}
+                    alt={playlist.name}
+                    className="w-full aspect-square rounded mb-2 object-cover"
+                  />
+                ) : (
+                  <div className="w-full aspect-square rounded mb-2 bg-gray-600 flex items-center justify-center">
+                    <List className="w-8 h-8 text-gray-400" />
+                  </div>
+                )}
                 <div className="text-sm font-semibold text-white truncate">{playlist.name}</div>
                 <div className="text-xs text-gray-400">{playlist.tracks.total} tracks</div>
               </div>
             ))}
+          </div>
+            )}
           </div>
         ) : viewMode === 'artists' && !selectedArtist ? (
           /* Artist Grid */
