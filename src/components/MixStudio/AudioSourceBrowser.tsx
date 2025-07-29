@@ -66,10 +66,40 @@ export const AudioSourceBrowser: React.FC<AudioSourceBrowserProps> = ({ onTrackS
     return `${mins}:${secs.toString().padStart(2, '0')}`
   }
   
-  // Handle drag start
+  // Handle drag start with enhanced visual feedback
   const handleDragStart = (e: React.DragEvent, source: AudioSource) => {
     e.dataTransfer.setData('audio-source', JSON.stringify(source))
     e.dataTransfer.effectAllowed = 'copy'
+    
+    // Add dragging class to element
+    const element = e.currentTarget as HTMLElement
+    element.classList.add('opacity-50')
+    
+    // Create custom drag image
+    const dragImage = document.createElement('div')
+    dragImage.style.position = 'absolute'
+    dragImage.style.top = '-1000px'
+    dragImage.style.padding = '8px 12px'
+    dragImage.style.backgroundColor = '#7C3AED'
+    dragImage.style.color = 'white'
+    dragImage.style.borderRadius = '4px'
+    dragImage.style.fontSize = '12px'
+    dragImage.style.fontWeight = '500'
+    dragImage.style.display = 'flex'
+    dragImage.style.alignItems = 'center'
+    dragImage.style.gap = '4px'
+    dragImage.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13M9 18c0 1.66-1.34 3-3 3s-3-1.34-3-3 1.34-3 3-3 3 1.34 3 3zM21 16c0 1.66-1.34 3-3 3s-3-1.34-3-3 1.34-3 3-3 3 1.34 3 3z"/></svg> ${source.name}`
+    document.body.appendChild(dragImage)
+    e.dataTransfer.setDragImage(dragImage, 0, 0)
+    
+    // Clean up
+    setTimeout(() => document.body.removeChild(dragImage), 0)
+  }
+  
+  // Handle drag end
+  const handleDragEnd = (e: React.DragEvent) => {
+    const element = e.currentTarget as HTMLElement
+    element.classList.remove('opacity-50')
   }
   
   return (
@@ -155,15 +185,26 @@ export const AudioSourceBrowser: React.FC<AudioSourceBrowserProps> = ({ onTrackS
                   key={file.id}
                   draggable
                   onDragStart={(e) => handleDragStart(e, file)}
-                  className="p-3 bg-gray-700 rounded hover:bg-gray-600 cursor-move transition-colors"
+                  onDragEnd={handleDragEnd}
+                  className="p-3 bg-gray-700 rounded hover:bg-gray-600 cursor-move transition-all group"
                 >
                   <div className="flex items-center justify-between">
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium text-sm truncate">{file.name}</div>
-                      <div className="text-xs text-gray-400">{file.artist}</div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 bg-purple-600 rounded flex items-center justify-center group-hover:bg-purple-500 transition-colors">
+                        <Music className="w-4 h-4" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-sm truncate">{file.name}</div>
+                        <div className="text-xs text-gray-400">{file.artist}</div>
+                      </div>
                     </div>
-                    <div className="text-xs text-gray-400 ml-2">
-                      {formatDuration(file.duration)}
+                    <div className="flex flex-col items-end">
+                      <div className="text-xs text-gray-400">
+                        {formatDuration(file.duration)}
+                      </div>
+                      <div className="text-[10px] text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                        Drag to timeline
+                      </div>
                     </div>
                   </div>
                 </div>

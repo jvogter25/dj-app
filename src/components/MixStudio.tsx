@@ -6,7 +6,7 @@ import {
   Layers, Scissors, Copy, FolderOpen, Menu
 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
-import { Timeline } from './MixStudio/Timeline'
+import { EnhancedTimeline } from './MixStudio/EnhancedTimeline'
 import { AudioSourceBrowser } from './MixStudio/AudioSourceBrowser'
 import { MixProjectManager } from './MixStudio/MixProjectManager'
 import { ExportDialog } from './MixStudio/ExportDialog'
@@ -397,7 +397,7 @@ export const MixStudio: React.FC = () => {
       <div className="flex-1 flex overflow-hidden">
         {/* Timeline */}
         <div className="flex-1 flex flex-col">
-          <Timeline
+          <EnhancedTimeline
             project={project}
             currentTime={currentTime}
             zoom={zoom}
