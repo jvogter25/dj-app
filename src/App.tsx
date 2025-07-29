@@ -1,6 +1,7 @@
 import React from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
+import { PlayerProvider } from './contexts/PlayerContext'
 import { DJInterface } from './components/DJInterface'
 import { AuthCallback } from './components/AuthCallback'
 import { DebugInfo } from './components/DebugInfo'
@@ -59,7 +60,9 @@ function App() {
             path="/"
             element={
               <ProtectedRoute>
-                <DJInterface />
+                <PlayerProvider>
+                  <DJInterface />
+                </PlayerProvider>
               </ProtectedRoute>
             }
           />

@@ -13,6 +13,11 @@ interface DeckProps {
     artists: { name: string }[]
     album: { images: { url: string }[] }
   }
+  playerState?: {
+    position: number
+    duration: number
+    isReady: boolean
+  }
 }
 
 export const Deck: React.FC<DeckProps> = ({
@@ -22,19 +27,57 @@ export const Deck: React.FC<DeckProps> = ({
   onCue,
   tempo,
   onTempoChange,
-  loadedTrack
+  loadedTrack,
+  playerState
 }) => {
   const deckColor = deckId === 'A' ? 'blue' : 'green'
   
+  // Calculate progress percentage
+  const progress = playerState && playerState.duration > 0 
+    ? (playerState.position / playerState.duration) * 100 
+    : 0
+  
+  // Format time display
+  const formatTime = (ms: number) => {
+    const seconds = Math.floor(ms / 1000)
+    const minutes = Math.floor(seconds / 60)
+    const remainingSeconds = seconds % 60
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`
+  }
+  
   return (
     <div className={`bg-gray-800 rounded-lg p-6 border-2 border-${deckColor}-500`}>
-      <div className="mb-4">
+      <div className="mb-4 flex items-center justify-between">
         <h2 className={`text-2xl font-bold text-${deckColor}-400`}>Deck {deckId}</h2>
+        <div className={`w-3 h-3 rounded-full ${playerState?.isReady ? 'bg-green-500' : 'bg-red-500'}`} 
+             title={playerState?.isReady ? 'Player Ready' : 'Player Not Ready'} />
       </div>
       
       {/* Waveform Display */}
-      <div className="bg-gray-900 h-32 rounded mb-4 flex items-center justify-center">
-        <span className="text-gray-500">Waveform Display</span>
+      <div className="bg-gray-900 h-32 rounded mb-4 relative overflow-hidden">
+        {loadedTrack ? (
+          <>
+            {/* Progress bar */}
+            <div 
+              className={`absolute top-0 left-0 h-full bg-${deckColor}-500 opacity-20 transition-all duration-100`}
+              style={{ width: `${progress}%` }}
+            />
+            {/* Time display */}
+            <div className="absolute bottom-2 left-2 text-xs text-gray-400">
+              {playerState ? formatTime(playerState.position) : '0:00'}
+            </div>
+            <div className="absolute bottom-2 right-2 text-xs text-gray-400">
+              {playerState ? formatTime(playerState.duration) : '0:00'}
+            </div>
+            <div className="flex items-center justify-center h-full">
+              <span className="text-gray-500">Waveform Loading...</span>
+            </div>
+          </>
+        ) : (
+          <div className="flex items-center justify-center h-full">
+            <span className="text-gray-500">No Track Loaded</span>
+          </div>
+        )}
       </div>
       
       {/* Track Info */}

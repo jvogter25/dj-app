@@ -1,22 +1,34 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Deck } from './Deck'
 import { Mixer } from './Mixer'
 import { TrackBrowser } from './TrackBrowser'
 import { Library, Settings, Radio, X } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
+import { usePlayer } from '../contexts/PlayerContext'
 
 export const DJInterface: React.FC = () => {
   const { signOut } = useAuth()
-  const [deckAPlaying, setDeckAPlaying] = useState(false)
-  const [deckBPlaying, setDeckBPlaying] = useState(false)
+  const { deckA, deckB, crossfaderPosition, setCrossfaderPosition } = usePlayer()
   const [deckATempo, setDeckATempo] = useState(0)
   const [deckBTempo, setDeckBTempo] = useState(0)
-  const [crossfaderPosition, setCrossfaderPosition] = useState(0)
   const [channelAVolume, setChannelAVolume] = useState(75)
   const [channelBVolume, setChannelBVolume] = useState(75)
   const [showLibrary, setShowLibrary] = useState(true)
   const [showSettings, setShowSettings] = useState(false)
   const [loadedTracks, setLoadedTracks] = useState<{ A?: any, B?: any }>({})
+
+  // Handle track loading to Spotify players
+  const handleTrackSelect = async (track: any, deck: 'A' | 'B') => {
+    console.log(`Loading ${track.name} to Deck ${deck}`)
+    setLoadedTracks(prev => ({ ...prev, [deck]: track }))
+    
+    // Load to Spotify player
+    if (deck === 'A') {
+      await deckA.loadTrack(track.uri)
+    } else {
+      await deckB.loadTrack(track.uri)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">
@@ -58,12 +70,13 @@ export const DJInterface: React.FC = () => {
             <div className="lg:col-span-1">
               <Deck
                 deckId="A"
-                isPlaying={deckAPlaying}
-                onPlayPause={() => setDeckAPlaying(!deckAPlaying)}
-                onCue={() => console.log('Cue Deck A')}
+                isPlaying={deckA.playerState.isPlaying}
+                onPlayPause={deckA.togglePlay}
+                onCue={deckA.cue}
                 tempo={deckATempo}
                 onTempoChange={setDeckATempo}
-                loadedTrack={loadedTracks.A}
+                loadedTrack={deckA.playerState.currentTrack || loadedTracks.A}
+                playerState={deckA.playerState}
               />
             </div>
 
@@ -77,8 +90,10 @@ export const DJInterface: React.FC = () => {
                 onChannelVolumeChange={(channel, volume) => {
                   if (channel === 'A') {
                     setChannelAVolume(volume)
+                    deckA.setVolume(volume)
                   } else {
                     setChannelBVolume(volume)
+                    deckB.setVolume(volume)
                   }
                 }}
               />
@@ -88,12 +103,13 @@ export const DJInterface: React.FC = () => {
             <div className="lg:col-span-1">
               <Deck
                 deckId="B"
-                isPlaying={deckBPlaying}
-                onPlayPause={() => setDeckBPlaying(!deckBPlaying)}
-                onCue={() => console.log('Cue Deck B')}
+                isPlaying={deckB.playerState.isPlaying}
+                onPlayPause={deckB.togglePlay}
+                onCue={deckB.cue}
                 tempo={deckBTempo}
                 onTempoChange={setDeckBTempo}
-                loadedTrack={loadedTracks.B}
+                loadedTrack={deckB.playerState.currentTrack || loadedTracks.B}
+                playerState={deckB.playerState}
               />
             </div>
           </div>
@@ -102,10 +118,7 @@ export const DJInterface: React.FC = () => {
           {showLibrary && (
             <div className="mt-6 h-96">
               <TrackBrowser 
-                onTrackSelect={(track, deck) => {
-                  console.log(`Loading ${track.name} to Deck ${deck}`)
-                  setLoadedTracks(prev => ({ ...prev, [deck]: track }))
-                }}
+                onTrackSelect={handleTrackSelect}
               />
             </div>
           )}
