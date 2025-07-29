@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, useEffect } from 'react'
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react'
 import { useSpotifyPlayer } from '../hooks/useSpotifyPlayer'
+import { CrossfaderEngine, CrossfaderCurve, TransitionType } from '../lib/crossfaderEngine'
 
 interface PlayerContextType {
   deckA: ReturnType<typeof useSpotifyPlayer>
@@ -12,6 +13,9 @@ interface PlayerContextType {
   setChannelAVolume: (volume: number) => void
   channelBVolume: number
   setChannelBVolume: (volume: number) => void
+  setCrossfaderCurve: (curve: CrossfaderCurve) => void
+  performTransition: (type: TransitionType, duration?: number) => Promise<void>
+  getMixLevels: () => { deckA: number, deckB: number }
 }
 
 const PlayerContext = createContext<PlayerContextType | undefined>(undefined)
@@ -31,9 +35,33 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [masterVolume, setMasterVolume] = useState(75)
   const [channelAVolume, setChannelAVolume] = useState(75)
   const [channelBVolume, setChannelBVolume] = useState(75)
+  
+  const audioContextRef = useRef<AudioContext | null>(null)
+  const crossfaderEngineRef = useRef<CrossfaderEngine | null>(null)
 
+  // Initialize crossfader engine
+  useEffect(() => {
+    if (!audioContextRef.current) {
+      audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)()
+      crossfaderEngineRef.current = new CrossfaderEngine(audioContextRef.current)
+    }
+    
+    return () => {
+      if (crossfaderEngineRef.current) {
+        crossfaderEngineRef.current.disconnect()
+      }
+    }
+  }, [])
+  
   // Apply crossfader and channel volume logic
   useEffect(() => {
+    if (crossfaderEngineRef.current) {
+      crossfaderEngineRef.current.setCrossfaderPosition(crossfaderPosition)
+      crossfaderEngineRef.current.setChannelVolume('A', channelAVolume)
+      crossfaderEngineRef.current.setChannelVolume('B', channelBVolume)
+    }
+    
+    // For Spotify SDK players (without Web Audio integration)
     // Crossfader at -50 = full A, 0 = both, +50 = full B
     const crossfaderA = crossfaderPosition <= 0 ? 1 : Math.max(0, 1 - (crossfaderPosition / 50))
     const crossfaderB = crossfaderPosition >= 0 ? 1 : Math.max(0, 1 + (crossfaderPosition / 50))
@@ -50,6 +78,29 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     deckA.setVolume(finalAVolume)
     deckB.setVolume(finalBVolume)
   }, [crossfaderPosition, masterVolume, channelAVolume, channelBVolume, deckA, deckB])
+  
+  // Crossfader control methods
+  const setCrossfaderCurve = (curve: CrossfaderCurve) => {
+    if (crossfaderEngineRef.current) {
+      crossfaderEngineRef.current.setCrossfaderCurve(curve)
+    }
+  }
+  
+  const performTransition = async (type: TransitionType, duration?: number) => {
+    if (crossfaderEngineRef.current) {
+      await crossfaderEngineRef.current.performTransition(type, duration)
+      // Update state to reflect new position
+      const newPosition = crossfaderPosition > 0 ? -50 : 50
+      setCrossfaderPosition(newPosition)
+    }
+  }
+  
+  const getMixLevels = () => {
+    if (crossfaderEngineRef.current) {
+      return crossfaderEngineRef.current.getMixLevels()
+    }
+    return { deckA: channelAVolume / 100, deckB: channelBVolume / 100 }
+  }
 
   return (
     <PlayerContext.Provider value={{
@@ -62,7 +113,10 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       channelAVolume,
       setChannelAVolume,
       channelBVolume,
-      setChannelBVolume
+      setChannelBVolume,
+      setCrossfaderCurve,
+      performTransition,
+      getMixLevels
     }}>
       {children}
     </PlayerContext.Provider>

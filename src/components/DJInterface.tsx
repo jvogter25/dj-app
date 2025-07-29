@@ -4,7 +4,8 @@ import { Mixer } from './Mixer'
 import { TrackBrowser } from './TrackBrowser'
 import { SoundCloudBrowser } from './SoundCloudBrowser'
 import { GestureHelp } from './GestureHelp'
-import { SmartTransition, TransitionType } from './SmartTransition'
+import { SmartTransition } from './SmartTransition'
+import { TransitionType } from '../lib/crossfaderEngine'
 import { LoopCapture } from './LoopCapture'
 import { EffectsPanel, EffectSettings } from './EffectsPanel'
 import { SetupWizard } from './SetupWizard'
@@ -24,7 +25,8 @@ export const DJInterface: React.FC = () => {
     channelAVolume, 
     setChannelAVolume,
     channelBVolume, 
-    setChannelBVolume
+    setChannelBVolume,
+    performTransition
   } = usePlayer()
   // Tempo is now handled by the Web Audio players directly
   const [showLibrary, setShowLibrary] = useState(true)
@@ -64,9 +66,24 @@ export const DJInterface: React.FC = () => {
   }
 
   // Handle smart transitions
-  const handleTransition = (type: TransitionType, duration: number) => {
+  const handleTransition = async (type: any, duration: number) => {
     console.log(`Executing ${type} transition for ${duration} beats`)
-    // TODO: Implement actual transition logic
+    
+    // Map SmartTransition types to CrossfaderEngine types
+    const transitionMap: Record<string, TransitionType> = {
+      'crossfade': 'fade',
+      'bassline_swap': 'bassSwap',
+      'stutter_cut': 'cut',
+      'harmonic_blend': 'fade',
+      'stem_layer': 'echo'
+    }
+    
+    const engineTransitionType = transitionMap[type] || 'fade'
+    
+    // Convert beats to seconds (assuming 128 BPM average)
+    const durationInSeconds = (duration / 128) * 60
+    
+    await performTransition(engineTransitionType, durationInSeconds)
   }
 
   // Handle loop capture
