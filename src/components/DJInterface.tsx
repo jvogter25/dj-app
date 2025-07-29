@@ -171,12 +171,17 @@ export const DJInterface: React.FC = () => {
                 onSeek={deckA.seek}
                 tempo={deckA.tempo}
                 onTempoChange={deckA.setTempoAdjustment}
-                loadedTrack={loadedTracks.A ? {
-                  ...loadedTracks.A,
-                  isEnhanced: deckA.isEnhanced
-                } : null}
+                loadedTrack={loadedTracks.A}
                 playerState={deckA.playerState}
                 onEQChange={deckA.setEQ}
+                isEnhanced={deckA.isEnhanced}
+                onEnhancedToggle={() => {
+                  if (deckA.isEnhanced) {
+                    deckA.disableEnhancedMode()
+                  } else {
+                    deckA.enableEnhancedMode()
+                  }
+                }}
               />
               <LoopCapture
                 deckId="A"
@@ -230,12 +235,17 @@ export const DJInterface: React.FC = () => {
                 onSeek={deckB.seek}
                 tempo={deckB.tempo}
                 onTempoChange={deckB.setTempoAdjustment}
-                loadedTrack={loadedTracks.B ? {
-                  ...loadedTracks.B,
-                  isEnhanced: deckB.isEnhanced
-                } : null}
+                loadedTrack={loadedTracks.B}
                 playerState={deckB.playerState}
                 onEQChange={deckB.setEQ}
+                isEnhanced={deckB.isEnhanced}
+                onEnhancedToggle={() => {
+                  if (deckB.isEnhanced) {
+                    deckB.disableEnhancedMode()
+                  } else {
+                    deckB.enableEnhancedMode()
+                  }
+                }}
               />
               <LoopCapture
                 deckId="B"

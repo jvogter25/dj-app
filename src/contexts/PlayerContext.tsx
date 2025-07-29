@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react'
 import { useSpotifyPlayer } from '../hooks/useSpotifyPlayer'
+import { useEnhancedPlayer } from '../hooks/useEnhancedPlayer'
 import { CrossfaderEngine, CrossfaderCurve, TransitionType } from '../lib/crossfaderEngine'
 import { MixRecorder } from '../lib/mixRecorder'
 

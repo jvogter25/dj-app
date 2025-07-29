@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Play, Pause, RotateCcw } from 'lucide-react'
+import { Play, Pause, RotateCcw, Zap } from 'lucide-react'
 import { useGestureControls, useJogWheel } from '../hooks/useGestureControls'
 import { WaveformDisplay } from './WaveformDisplay'
 import { waveformGenerator, WaveformData } from '../lib/waveformGenerator'
@@ -29,6 +29,8 @@ interface DeckProps {
     isReady: boolean
   }
   onEQChange?: (eq: { high: number; mid: number; low: number }) => void
+  isEnhanced?: boolean
+  onEnhancedToggle?: () => void
 }
 
 export const Deck: React.FC<DeckProps> = ({
@@ -41,7 +43,9 @@ export const Deck: React.FC<DeckProps> = ({
   onSeek,
   loadedTrack,
   playerState,
-  onEQChange
+  onEQChange,
+  isEnhanced = false,
+  onEnhancedToggle
 }) => {
   const deckColor = deckId === 'A' ? 'blue' : 'green'
   
@@ -262,8 +266,21 @@ export const Deck: React.FC<DeckProps> = ({
           <span>Tempo</span>
           <div className="flex items-center gap-2">
             <span>{tempo > 0 ? '+' : ''}{tempo.toFixed(1)}%</span>
-            {(loadedTrack as any)?.isEnhanced && (
+            {isEnhanced && (
               <span className="text-xs bg-yellow-600 px-1 rounded">ENHANCED</span>
+            )}
+            {loadedTrack?.preview_url && onEnhancedToggle && (
+              <button
+                onClick={onEnhancedToggle}
+                className={`p-1 rounded transition-colors ${
+                  isEnhanced 
+                    ? 'bg-yellow-600 text-white' 
+                    : 'bg-gray-700 hover:bg-gray-600 text-gray-400'
+                }`}
+                title={isEnhanced ? "Disable Enhanced Mode" : "Enable Enhanced Mode (Tempo Control)"}
+              >
+                <Zap className="w-3 h-3" />
+              </button>
             )}
           </div>
         </div>
