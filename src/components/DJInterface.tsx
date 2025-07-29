@@ -8,7 +8,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { usePlayer } from '../contexts/PlayerContext'
 
 export const DJInterface: React.FC = () => {
-  const { signOut } = useAuth()
+  const { signOut, spotifyToken } = useAuth()
   const { 
     deckA, 
     deckB, 
@@ -24,10 +24,11 @@ export const DJInterface: React.FC = () => {
   const [showSettings, setShowSettings] = useState(false)
   const [loadedTracks, setLoadedTracks] = useState<{ A?: any, B?: any }>({})
 
-  // Debug player state
+  // Debug player state and auth
   console.log('Deck A state:', deckA.playerState)
   console.log('Deck B state:', deckB.playerState)
   console.log('Crossfader position:', crossfaderPosition)
+  console.log('Auth state:', { spotifyToken: !!spotifyToken })
 
   // Handle track loading to Spotify players
   const handleTrackSelect = async (track: any, deck: 'A' | 'B') => {
@@ -88,7 +89,10 @@ export const DJInterface: React.FC = () => {
                 onSeek={deckA.seek}
                 tempo={deckA.tempo}
                 onTempoChange={deckA.setTempoAdjustment}
-                loadedTrack={deckA.playerState.currentTrack || loadedTracks.A}
+                loadedTrack={{
+                  ...(deckA.playerState.currentTrack || loadedTracks.A),
+                  isEnhanced: deckA.isEnhanced
+                }}
                 playerState={deckA.playerState}
               />
             </div>
@@ -120,7 +124,10 @@ export const DJInterface: React.FC = () => {
                 onSeek={deckB.seek}
                 tempo={deckB.tempo}
                 onTempoChange={deckB.setTempoAdjustment}
-                loadedTrack={deckB.playerState.currentTrack || loadedTracks.B}
+                loadedTrack={{
+                  ...(deckB.playerState.currentTrack || loadedTracks.B),
+                  isEnhanced: deckB.isEnhanced
+                }}
                 playerState={deckB.playerState}
               />
             </div>

@@ -154,17 +154,27 @@ export const Deck: React.FC<DeckProps> = ({
       <div className="mb-4 touch-none" {...tempoGestures()}>
         <div className="flex justify-between text-sm text-gray-400 mb-1">
           <span>Tempo</span>
-          <span>{tempo > 0 ? '+' : ''}{tempo.toFixed(1)}%</span>
+          <div className="flex items-center gap-2">
+            <span>{tempo > 0 ? '+' : ''}{tempo.toFixed(1)}%</span>
+            {(loadedTrack as any)?.isEnhanced && (
+              <span className="text-xs bg-yellow-600 px-1 rounded">ENHANCED</span>
+            )}
+          </div>
         </div>
         <input
           type="range"
-          min="-10"
-          max="10"
-          step="0.1"
+          min="-50"
+          max="100"
+          step="1"
           value={tempo}
           onChange={(e) => onTempoChange(parseFloat(e.target.value))}
           className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
         />
+        <div className="flex justify-between text-xs text-gray-500 mt-1">
+          <span>-50%</span>
+          <span>0%</span>
+          <span>+100%</span>
+        </div>
       </div>
       
       {/* EQ Knobs */}

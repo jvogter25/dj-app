@@ -57,9 +57,45 @@ export const TrackBrowser: React.FC<TrackBrowserProps> = ({ onTrackSelect }) => 
   const [selectedPlaylist, setSelectedPlaylist] = useState<string | null>(null)
   const [selectedArtist, setSelectedArtist] = useState<string | null>(null)
   const [bpmFilter, setBpmFilter] = useState<{ min: number; max: number }>({ min: 60, max: 200 })
+  const [apiError, setApiError] = useState<string | null>(null)
 
   // Cache for audio features to avoid repeated API calls
   const [audioFeaturesCache, setAudioFeaturesCache] = useState<Map<string, any>>(new Map())
+
+  // Test Spotify API connection
+  const testSpotifyAPI = useCallback(async () => {
+    if (!spotifyToken) return
+
+    try {
+      console.log('Testing Spotify API connection...')
+      const response = await fetch('https://api.spotify.com/v1/me', {
+        headers: {
+          'Authorization': `Bearer ${spotifyToken}`
+        }
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('Spotify API test failed:', response.status, errorText)
+        setApiError(`API Error: ${response.status} - ${errorText}`)
+        return
+      }
+
+      const user = await response.json()
+      console.log('Spotify API test successful. User:', user)
+      setApiError(null)
+    } catch (error) {
+      console.error('Spotify API test error:', error)
+      setApiError(`Connection Error: ${error}`)
+    }
+  }, [spotifyToken])
+
+  // Test API on token change
+  useEffect(() => {
+    if (spotifyToken) {
+      testSpotifyAPI()
+    }
+  }, [spotifyToken, testSpotifyAPI])
 
   // Format duration from ms to mm:ss
   const formatDuration = (ms: number) => {
@@ -462,6 +498,32 @@ export const TrackBrowser: React.FC<TrackBrowserProps> = ({ onTrackSelect }) => 
                 className="flex-1"
               />
             </div>
+          </div>
+        )}
+
+        {/* API Error Display */}
+        {apiError && (
+          <div className="mb-4 p-3 bg-red-900 border border-red-700 rounded-lg">
+            <div className="text-red-200 text-sm">{apiError}</div>
+            <button
+              onClick={testSpotifyAPI}
+              className="mt-2 px-3 py-1 bg-red-700 hover:bg-red-600 text-white text-xs rounded"
+            >
+              Retry Connection
+            </button>
+          </div>
+        )}
+
+        {/* Manual Refresh Button */}
+        {viewMode === 'library' && (
+          <div className="mb-4">
+            <button
+              onClick={() => fetchUserTracks()}
+              className="w-full py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+              disabled={loading}
+            >
+              {loading ? 'Loading...' : 'Refresh Library'}
+            </button>
           </div>
         )}
 

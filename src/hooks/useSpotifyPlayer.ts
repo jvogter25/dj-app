@@ -13,7 +13,7 @@ interface SpotifyPlayerState {
 export const useSpotifyPlayer = (playerId: string) => {
   const { spotifyToken } = useAuth()
   const [player, setPlayer] = useState<any | null>(null)
-  const [deviceId, setDeviceId] = useState<string | null>(null)
+  const [deviceId, setDeviceId] = useState<string | null>(null)  
   const [playerState, setPlayerState] = useState<SpotifyPlayerState>({
     isReady: false,
     isPlaying: false,
@@ -22,9 +22,14 @@ export const useSpotifyPlayer = (playerId: string) => {
     duration: 0,
     volume: 0.75
   })
-  const [tempo, setTempo] = useState(0) // Tempo adjustment percentage (-10 to +10)
+  const [tempo, setTempo] = useState(0) // Tempo adjustment percentage (-50 to +100)
   
   const playerRef = useRef<any | null>(null)
+  const audioContextRef = useRef<AudioContext | null>(null)
+  const sourceNodeRef = useRef<MediaElementAudioSourceNode | null>(null)
+  const gainNodeRef = useRef<GainNode | null>(null)
+  const audioElementRef = useRef<HTMLAudioElement | null>(null)
+  const [isEnhanced, setIsEnhanced] = useState(false)
 
   // Initialize player
   useEffect(() => {
@@ -155,12 +160,124 @@ export const useSpotifyPlayer = (playerId: string) => {
     player.pause()
   }, [player])
 
-  // Note: Spotify Web Playback SDK doesn't support tempo/pitch adjustment
-  // This is a limitation of the SDK. For now, we'll track the tempo value
-  // but can't actually apply it to Spotify playback
-  const setTempoAdjustment = useCallback((tempoPercent: number) => {
+  // Enhanced tempo control with Web Audio API
+  const initAudioProcessing = useCallback(async () => {
+    try {
+      // Get the current track info for fetching preview URL
+      if (!playerState.currentTrack) return
+
+      // Create audio context
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+      audioContextRef.current = audioContext
+
+      // Create audio element for the track
+      const audioElement = document.createElement('audio')
+      audioElement.crossOrigin = 'anonymous'
+      audioElement.preload = 'auto'
+      
+      // Use Spotify preview URL for tempo-adjustable playback
+      if (playerState.currentTrack.preview_url) {
+        audioElement.src = playerState.currentTrack.preview_url
+      } else {
+        console.warn('No preview URL available for tempo adjustment')
+        return
+      }
+
+      audioElementRef.current = audioElement
+      
+      // Create Web Audio nodes
+      const source = audioContext.createMediaElementSource(audioElement)
+      const gainNode = audioContext.createGain()
+      
+      sourceNodeRef.current = source
+      gainNodeRef.current = gainNode
+
+      // Connect the audio graph
+      source.connect(gainNode)
+      gainNode.connect(audioContext.destination)
+
+      // Set initial volume
+      gainNode.gain.value = playerState.volume
+
+      // Sync with current playback position
+      if (playerState.position > 0) {
+        audioElement.currentTime = playerState.position / 1000
+      }
+
+      setIsEnhanced(true)
+      console.log(`Enhanced audio processing enabled for ${playerId}`)
+      
+    } catch (error) {
+      console.error('Failed to initialize enhanced audio processing:', error)
+    }
+  }, [playerState.currentTrack, playerState.volume, playerState.position, playerId])
+
+  // Switch between Spotify SDK and enhanced playback
+  const enableEnhancedMode = useCallback(async () => {
+    if (!playerState.currentTrack) return
+    
+    // Pause Spotify playback
+    if (player) {
+      player.pause()
+    }
+    
+    // Initialize enhanced audio processing
+    await initAudioProcessing()
+  }, [player, playerState.currentTrack, initAudioProcessing])
+
+  const disableEnhancedMode = useCallback(() => {
+    // Stop enhanced audio
+    if (audioElementRef.current) {
+      audioElementRef.current.pause()
+    }
+    
+    // Clean up Web Audio
+    if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+      audioContextRef.current.close()
+    }
+    
+    setIsEnhanced(false)
+    console.log(`Enhanced mode disabled for ${playerId}`)
+  }, [playerId])
+
+  // Enhanced tempo control
+  const setTempoAdjustment = useCallback(async (tempoPercent: number) => {
     setTempo(tempoPercent)
-    console.warn('Tempo adjustment not supported by Spotify Web Playback SDK')
+    
+    if (tempoPercent === 0) {
+      // Return to normal Spotify playback
+      if (isEnhanced) {
+        disableEnhancedMode()
+        // Resume Spotify playback
+        if (player) {
+          player.resume()
+        }
+      }
+    } else {
+      // Enable enhanced mode for tempo adjustment
+      if (!isEnhanced) {
+        await enableEnhancedMode()
+      }
+      
+      // Apply tempo adjustment
+      if (audioElementRef.current) {
+        const playbackRate = 1 + (tempoPercent / 100)
+        audioElementRef.current.playbackRate = Math.max(0.25, Math.min(4.0, playbackRate))
+        console.log(`Tempo adjusted to ${tempoPercent}% (${playbackRate}x) on ${playerId}`)
+      }
+    }
+  }, [isEnhanced, enableEnhancedMode, disableEnhancedMode, player, playerId])
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (audioElementRef.current && audioElementRef.current.parentNode) {
+        audioElementRef.current.parentNode.removeChild(audioElementRef.current)
+      }
+      if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+        audioContextRef.current.close()
+      }
+    }
   }, [])
 
   return {
@@ -168,6 +285,7 @@ export const useSpotifyPlayer = (playerId: string) => {
     deviceId,
     playerState,
     tempo,
+    isEnhanced,
     loadTrack,
     togglePlay,
     pause,
@@ -175,6 +293,8 @@ export const useSpotifyPlayer = (playerId: string) => {
     seek,
     setVolume,
     cue,
-    setTempoAdjustment
+    setTempoAdjustment,
+    enableEnhancedMode,
+    disableEnhancedMode
   }
 }
