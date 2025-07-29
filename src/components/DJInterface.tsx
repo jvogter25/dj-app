@@ -87,11 +87,14 @@ export const DJInterface: React.FC = () => {
   // Handle effects
   const handleEffectChange = (deck: 'A' | 'B', effect: keyof EffectSettings, value: number) => {
     if (deck === 'A') {
-      setDeckAEffects(prev => ({ ...prev, [effect]: value }))
+      const newEffects = { ...deckAEffects, [effect]: value }
+      setDeckAEffects(newEffects)
+      deckA.setEffects(newEffects)
     } else {
-      setDeckBEffects(prev => ({ ...prev, [effect]: value }))
+      const newEffects = { ...deckBEffects, [effect]: value }
+      setDeckBEffects(newEffects)
+      deckB.setEffects(newEffects)
     }
-    // TODO: Apply effects to audio
   }
 
   return (

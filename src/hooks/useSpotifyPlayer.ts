@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useAuth } from '../contexts/AuthContext'
-import { AudioEffectsProcessor } from '../lib/audioEffects'
+import { AudioEffectsProcessor, EffectsSettings } from '../lib/audioEffects'
 import { getLoopCaptureEngine, LoopCaptureEngine, Loop } from '../lib/loopCapture'
 
 interface SpotifyPlayerState {
@@ -380,6 +380,15 @@ export const useSpotifyPlayer = (playerId: string) => {
     effectsProcessorRef.current.setFilters(filters)
   }, [])
   
+  // Effects Controls
+  const setEffects = useCallback((effects: EffectsSettings) => {
+    if (!effectsProcessorRef.current) {
+      console.warn(`[${playerId}] No effects processor available`)
+      return
+    }
+    effectsProcessorRef.current.setEffects(effects)
+  }, [playerId])
+  
   // Loop Capture Functions
   const captureLoop = useCallback(async (startTime: number, endTime: number, trailOff: number) => {
     if (!audioContextRef.current) {
@@ -491,6 +500,7 @@ export const useSpotifyPlayer = (playerId: string) => {
     setMidEQ,
     setHighEQ,
     setFilters,
+    setEffects,
     // Loop controls
     loops,
     captureLoop,
