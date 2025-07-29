@@ -36,10 +36,22 @@ export const spotifyAuth = {
   handleCallback: async (hash: string) => {
     const params = new URLSearchParams(hash.substring(1))
     const accessToken = params.get('access_token')
+    const error = params.get('error')
     const state = params.get('state')
     const storedState = sessionStorage.getItem('spotify_auth_state')
     
+    // Check for Spotify error first
+    if (error) {
+      throw new Error(`Spotify auth error: ${error}`)
+    }
+    
     if (!accessToken || state !== storedState) {
+      console.error('Auth debug:', { 
+        hasToken: !!accessToken, 
+        state, 
+        storedState,
+        allParams: Object.fromEntries(params.entries())
+      })
       throw new Error('Invalid authentication response')
     }
     

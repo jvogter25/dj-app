@@ -18,7 +18,14 @@ export const AuthCallback: React.FC = () => {
         navigate('/')
       } catch (err) {
         console.error('Authentication error:', err)
-        setError(err instanceof Error ? err.message : 'Authentication failed')
+        const errorMessage = err instanceof Error ? err.message : 'Authentication failed'
+        
+        // If it's a Spotify error, show more details
+        if (errorMessage.includes('unsupported_response_type')) {
+          setError('Spotify app configuration error: Please ensure your Spotify app has Web API enabled')
+        } else {
+          setError(errorMessage)
+        }
       }
     }
 
