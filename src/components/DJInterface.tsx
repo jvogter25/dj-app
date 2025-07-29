@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Deck } from './Deck'
 import { Mixer } from './Mixer'
 import { TrackBrowser } from './TrackBrowser'
@@ -12,11 +13,12 @@ import { SetupWizard } from './SetupWizard'
 import { SmartQueue } from './SmartQueue'
 import { MixRecorder } from './MixRecorder'
 import ErrorBoundary from './ErrorBoundary'
-import { Library, Settings, Radio, X, ChevronUp, ChevronDown, HelpCircle, Music, Cloud } from 'lucide-react'
+import { Library, Settings, Radio, X, ChevronUp, ChevronDown, HelpCircle, Music, Cloud, Layers } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { usePlayer } from '../contexts/PlayerContext'
 
 export const DJInterface: React.FC = () => {
+  const navigate = useNavigate()
   const { signOut, spotifyToken, signInWithSpotify } = useAuth()
   const { 
     deckA, 
@@ -122,10 +124,20 @@ export const DJInterface: React.FC = () => {
       {/* Header */}
       <header className="bg-gray-800 border-b border-gray-700 px-6 py-4">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Radio className="w-6 h-6 text-purple-500" />
-            DJ Studio
-          </h1>
+          <div className="flex items-center gap-4">
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              <Radio className="w-6 h-6 text-purple-500" />
+              DJ Studio
+            </h1>
+            <button
+              onClick={() => navigate('/mix-studio')}
+              className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors flex items-center gap-2 text-sm"
+              title="Switch to Mix Studio"
+            >
+              <Layers className="w-4 h-4" />
+              Mix Studio
+            </button>
+          </div>
           <div className="flex items-center gap-2">
             <button 
               onClick={() => setShowLibrary(!showLibrary)}

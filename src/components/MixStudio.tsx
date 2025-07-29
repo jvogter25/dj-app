@@ -3,11 +3,13 @@ import { useNavigate } from 'react-router-dom'
 import { 
   Radio, Music, Upload, Play, Pause, SkipBack, Save, 
   Download, Settings, Plus, Trash2, Volume2, Clock,
-  Layers, Scissors, Copy
+  Layers, Scissors, Copy, FolderOpen, Menu
 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { Timeline } from './MixStudio/Timeline'
 import { AudioSourceBrowser } from './MixStudio/AudioSourceBrowser'
+import { MixProjectManager } from './MixStudio/MixProjectManager'
+import { ExportDialog } from './MixStudio/ExportDialog'
 import { MixProject, AudioClip } from '../types/mixStudio'
 import { mixProjectDB } from '../lib/mixProjectDatabase'
 import { mixStudioAudioEngine } from '../lib/mixStudioAudioEngine'
@@ -34,7 +36,10 @@ export const MixStudio: React.FC = () => {
   const [currentTime, setCurrentTime] = useState(0)
   const [selectedTool, setSelectedTool] = useState<'select' | 'split' | 'fade'>('select')
   const [showSourceBrowser, setShowSourceBrowser] = useState(true)
+  const [showProjectManager, setShowProjectManager] = useState(false)
+  const [showExportDialog, setShowExportDialog] = useState(false)
   const [zoom, setZoom] = useState(1)
+  const [savedStatus, setSavedStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved')
   const animationFrameRef = useRef<number | null>(null)
   
   // Initialize audio engine
@@ -117,32 +122,43 @@ export const MixStudio: React.FC = () => {
   
   // Project management
   const handleSaveProject = async () => {
+    setSavedStatus('saving')
     try {
       await mixProjectDB.saveProject(project)
       console.log('Project saved:', project.name)
+      setSavedStatus('saved')
+      setTimeout(() => setSavedStatus('unsaved'), 3000) // Reset after 3s
     } catch (error) {
       console.error('Error saving project:', error)
+      setSavedStatus('unsaved')
     }
   }
   
   const handleNewProject = () => {
-    if (window.confirm('Create new project? Unsaved changes will be lost.')) {
-      setProject({
-        id: crypto.randomUUID(),
-        name: 'Untitled Mix',
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-        bpm: 128,
-        duration: 300,
-        tracks: [
-          { id: '1', name: 'Track 1', clips: [], volume: 0.75, pan: 0, isMuted: false, isSolo: false, effects: [] },
-          { id: '2', name: 'Track 2', clips: [], volume: 0.75, pan: 0, isMuted: false, isSolo: false, effects: [] },
-          { id: '3', name: 'Track 3', clips: [], volume: 0.75, pan: 0, isMuted: false, isSolo: false, effects: [] },
-        ],
-        masterVolume: 1
-      })
-      setCurrentTime(0)
+    const newProject: MixProject = {
+      id: crypto.randomUUID(),
+      name: 'Untitled Mix',
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      bpm: 128,
+      duration: 300,
+      tracks: [
+        { id: '1', name: 'Track 1', clips: [], volume: 0.75, pan: 0, isMuted: false, isSolo: false, effects: [] },
+        { id: '2', name: 'Track 2', clips: [], volume: 0.75, pan: 0, isMuted: false, isSolo: false, effects: [] },
+        { id: '3', name: 'Track 3', clips: [], volume: 0.75, pan: 0, isMuted: false, isSolo: false, effects: [] },
+      ],
+      masterVolume: 1
     }
+    setProject(newProject)
+    setCurrentTime(0)
+    setShowProjectManager(false)
+  }
+  
+  const handleOpenProject = (selectedProject: MixProject) => {
+    setProject(selectedProject)
+    setCurrentTime(0)
+    setShowProjectManager(false)
+    setSavedStatus('saved')
   }
   
   // Timeline callbacks
@@ -156,6 +172,7 @@ export const MixStudio: React.FC = () => {
       ),
       updatedAt: Date.now()
     }))
+    setSavedStatus('unsaved')
   }
   
   const handleClipUpdate = (trackId: string, clipId: string, updates: Partial<AudioClip>) => {
@@ -173,6 +190,7 @@ export const MixStudio: React.FC = () => {
       ),
       updatedAt: Date.now()
     }))
+    setSavedStatus('unsaved')
   }
   
   const handleClipDelete = (trackId: string, clipId: string) => {
@@ -185,6 +203,20 @@ export const MixStudio: React.FC = () => {
       ),
       updatedAt: Date.now()
     }))
+    setSavedStatus('unsaved')
+  }
+  
+  const handleExport = async (format: 'mp3' | 'wav', quality: number) => {
+    try {
+      console.log(`Exporting as ${format} at ${quality}kbps...`)
+      // Export implementation will be added later
+      // For now, just simulate export
+      await new Promise(resolve => setTimeout(resolve, 3000))
+      console.log('Export complete!')
+      setShowExportDialog(false)
+    } catch (error) {
+      console.error('Export error:', error)
+    }
   }
   
   const formatTime = (seconds: number) => {
@@ -213,27 +245,62 @@ export const MixStudio: React.FC = () => {
             </div>
           </div>
           
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleNewProject}
-              className="p-2 hover:bg-gray-700 rounded transition-colors"
-              title="New Project"
-            >
-              <Plus className="w-4 h-4" />
-            </button>
-            <button
-              onClick={handleSaveProject}
-              className="p-2 hover:bg-gray-700 rounded transition-colors"
-              title="Save Project"
-            >
-              <Save className="w-4 h-4" />
-            </button>
-            <button
-              className="p-2 hover:bg-gray-700 rounded transition-colors"
-              title="Export Mix"
-            >
-              <Download className="w-4 h-4" />
-            </button>
+          <div className="flex items-center gap-4">
+            {/* Project Name */}
+            <input
+              type="text"
+              value={project.name}
+              onChange={(e) => {
+                setProject(prev => ({ ...prev, name: e.target.value }))
+                setSavedStatus('unsaved')
+              }}
+              className="px-3 py-1 bg-gray-700 rounded text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+              placeholder="Project Name"
+            />
+            
+            {/* Save Status */}
+            <div className="flex items-center gap-1 text-xs">
+              {savedStatus === 'saved' && (
+                <span className="text-green-400">✓ Saved</span>
+              )}
+              {savedStatus === 'saving' && (
+                <span className="text-yellow-400">Saving...</span>
+              )}
+              {savedStatus === 'unsaved' && (
+                <span className="text-gray-400">Unsaved changes</span>
+              )}
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleNewProject}
+                className="p-2 hover:bg-gray-700 rounded transition-colors"
+                title="New Project"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setShowProjectManager(true)}
+                className="p-2 hover:bg-gray-700 rounded transition-colors"
+                title="Open Project"
+              >
+                <FolderOpen className="w-4 h-4" />
+              </button>
+              <button
+                onClick={handleSaveProject}
+                className="p-2 hover:bg-gray-700 rounded transition-colors"
+                title="Save Project"
+              >
+                <Save className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setShowExportDialog(true)}
+                className="p-2 hover:bg-gray-700 rounded transition-colors"
+                title="Export Mix"
+              >
+                <Download className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
       </header>
@@ -360,10 +427,14 @@ export const MixStudio: React.FC = () => {
         {showSourceBrowser && (
           <div className="w-80 bg-gray-800 border-l border-gray-700 flex flex-col">
             <div className="p-3 border-b border-gray-700 flex items-center justify-between">
-              <h3 className="font-semibold">Audio Sources</h3>
+              <h3 className="font-semibold flex items-center gap-2">
+                <Menu className="w-4 h-4" />
+                Audio Sources
+              </h3>
               <button
                 onClick={() => setShowSourceBrowser(false)}
                 className="p-1 hover:bg-gray-700 rounded"
+                title="Hide Panel"
               >
                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                   <path d="M6 18L18 6M6 6l12 12" />
@@ -378,15 +449,51 @@ export const MixStudio: React.FC = () => {
             />
           </div>
         )}
+        
+        {/* Show/Hide Source Browser Button */}
+        {!showSourceBrowser && (
+          <button
+            onClick={() => setShowSourceBrowser(true)}
+            className="fixed right-4 top-1/2 transform -translate-y-1/2 p-2 bg-purple-600 hover:bg-purple-700 rounded-l-lg shadow-lg transition-colors"
+            title="Show Audio Sources"
+          >
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+        )}
       </div>
       
       {/* Status Bar */}
       <div className="bg-gray-800 border-t border-gray-700 px-4 py-1 text-xs text-gray-400">
         <div className="flex items-center justify-between">
-          <span>Project: {project.name}</span>
+          <div className="flex items-center gap-4">
+            <span>Duration: {formatTime(project.duration)}</span>
+            <span>Tracks: {project.tracks.length}</span>
+            <span>Clips: {project.tracks.reduce((acc, track) => acc + track.clips.length, 0)}</span>
+          </div>
           <span>Last saved: {new Date(project.updatedAt).toLocaleTimeString()}</span>
         </div>
       </div>
+      
+      {/* Project Manager Modal */}
+      {showProjectManager && (
+        <MixProjectManager
+          onProjectOpen={handleOpenProject}
+          onNewProject={handleNewProject}
+          onClose={() => setShowProjectManager(false)}
+        />
+      )}
+      
+      {/* Export Dialog */}
+      {showExportDialog && (
+        <ExportDialog
+          projectName={project.name}
+          duration={project.duration}
+          onExport={handleExport}
+          onClose={() => setShowExportDialog(false)}
+        />
+      )}
     </div>
   )
 }
