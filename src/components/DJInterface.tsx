@@ -137,10 +137,10 @@ export const DJInterface: React.FC = () => {
                 onSeek={deckA.seek}
                 tempo={deckA.tempo}
                 onTempoChange={deckA.setTempoAdjustment}
-                loadedTrack={{
-                  ...(deckA.playerState.currentTrack || loadedTracks.A),
+                loadedTrack={loadedTracks.A ? {
+                  ...loadedTracks.A,
                   isEnhanced: deckA.isEnhanced
-                }}
+                } : null}
                 playerState={deckA.playerState}
               />
               <LoopCapture
@@ -192,10 +192,10 @@ export const DJInterface: React.FC = () => {
                 onSeek={deckB.seek}
                 tempo={deckB.tempo}
                 onTempoChange={deckB.setTempoAdjustment}
-                loadedTrack={{
-                  ...(deckB.playerState.currentTrack || loadedTracks.B),
+                loadedTrack={loadedTracks.B ? {
+                  ...loadedTracks.B,
                   isEnhanced: deckB.isEnhanced
-                }}
+                } : null}
                 playerState={deckB.playerState}
               />
               <LoopCapture
@@ -218,14 +218,9 @@ export const DJInterface: React.FC = () => {
           {showLibrary && (
             <div className="mt-6 space-y-4">
               {/* Smart Queue */}
-              {(deckA.playerState.currentTrack || loadedTracks.A) && (
+              {loadedTracks.A && (
                 <SmartQueue
-                  currentTrack={{
-                    ...(deckA.playerState.currentTrack || loadedTracks.A),
-                    camelotKey: loadedTracks.A?.camelotKey,
-                    energy: loadedTracks.A?.energy,
-                    valence: loadedTracks.A?.valence
-                  }}
+                  currentTrack={loadedTracks.A}
                   onTrackSelect={handleTrackSelect}
                   targetDeck="B"
                 />

@@ -34,8 +34,14 @@ export const SmartQueue: React.FC<SmartQueueProps> = ({ currentTrack, onTrackSel
 
   // Generate smart suggestions based on current track
   const generateSuggestions = useCallback(async () => {
+    console.log('SmartQueue: Current track data:', currentTrack)
+    
     if (!currentTrack?.bpm || !currentTrack?.camelotKey || currentTrack.camelotKey === 'Unknown') {
-      console.log('Cannot generate suggestions - missing track features')
+      console.log('Cannot generate suggestions - missing track features', {
+        bpm: currentTrack?.bpm,
+        camelotKey: currentTrack?.camelotKey,
+        track: currentTrack
+      })
       return
     }
 
