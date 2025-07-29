@@ -7,9 +7,10 @@ interface AuthContextType {
   user: User | null
   spotifyToken: string | null
   loading: boolean
+  refreshing: boolean
   signInWithSpotify: () => void
   signOut: () => Promise<void>
-  refreshSpotifyToken: () => Promise<void>
+  refreshSpotifyToken: () => Promise<boolean>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -26,6 +27,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null)
   const [spotifyToken, setSpotifyToken] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
 
   useEffect(() => {
     // Check for existing session
@@ -65,16 +67,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setSpotifyToken(null)
   }
 
-  const refreshSpotifyToken = async () => {
-    console.log('Refreshing Spotify token...')
-    const newToken = await spotifyAuthPKCE.refreshAccessToken()
-    if (newToken) {
-      setSpotifyToken(newToken)
-      console.log('Token refreshed successfully')
-    } else {
-      console.error('Failed to refresh token - re-authentication required')
-      // Force re-authentication
-      signInWithSpotify()
+  const refreshSpotifyToken = async (): Promise<boolean> => {
+    if (refreshing) {
+      console.log('Already refreshing token...')
+      return false
+    }
+    
+    setRefreshing(true)
+    try {
+      console.log('Refreshing Spotify token...')
+      const newToken = await spotifyAuthPKCE.refreshAccessToken()
+      
+      if (newToken) {
+        setSpotifyToken(newToken)
+        console.log('Token refreshed successfully')
+        // Wait a bit to ensure state propagation
+        await new Promise(resolve => setTimeout(resolve, 100))
+        return true
+      } else {
+        console.error('Failed to refresh token - re-authentication required')
+        // Don't automatically redirect - let the user decide
+        return false
+      }
+    } catch (error) {
+      console.error('Error during token refresh:', error)
+      return false
+    } finally {
+      setRefreshing(false)
     }
   }
 
@@ -83,6 +102,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       user,
       spotifyToken,
       loading,
+      refreshing,
       signInWithSpotify,
       signOut,
       refreshSpotifyToken

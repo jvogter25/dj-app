@@ -3,6 +3,7 @@ import { Deck } from './Deck'
 import { Mixer } from './Mixer'
 import { TrackBrowser } from './TrackBrowser'
 import { GestureHelp } from './GestureHelp'
+import ErrorBoundary from './ErrorBoundary'
 import { Library, Settings, Radio, X } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { usePlayer } from '../contexts/PlayerContext'
@@ -136,9 +137,25 @@ export const DJInterface: React.FC = () => {
           {/* Bottom Section - Track Browser */}
           {showLibrary && (
             <div className="mt-6 h-96">
-              <TrackBrowser 
-                onTrackSelect={handleTrackSelect}
-              />
+              <ErrorBoundary
+                fallback={
+                  <div className="bg-gray-800 rounded-lg p-6 h-full flex items-center justify-center">
+                    <div className="text-center">
+                      <p className="text-red-400 mb-4">Error loading track browser</p>
+                      <button
+                        onClick={() => window.location.reload()}
+                        className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg"
+                      >
+                        Reload Page
+                      </button>
+                    </div>
+                  </div>
+                }
+              >
+                <TrackBrowser 
+                  onTrackSelect={handleTrackSelect}
+                />
+              </ErrorBoundary>
             </div>
           )}
 

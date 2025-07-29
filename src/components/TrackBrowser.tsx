@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { Search, Music, Clock, Loader, List, User, Filter, Zap } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
+import { spotifyAuthPKCE } from '../lib/spotifyPKCE'
 
 interface SpotifyTrack {
   id: string
@@ -45,7 +46,7 @@ interface TrackBrowserProps {
 }
 
 export const TrackBrowser: React.FC<TrackBrowserProps> = ({ onTrackSelect }) => {
-  const { spotifyToken, refreshSpotifyToken } = useAuth()
+  const { spotifyToken, refreshSpotifyToken, refreshing } = useAuth()
   const [tracks, setTracks] = useState<SpotifyTrack[]>([])
   const [playlists, setPlaylists] = useState<SpotifyPlaylist[]>([])
   const [artists, setArtists] = useState<SpotifyArtist[]>([])
@@ -58,9 +59,47 @@ export const TrackBrowser: React.FC<TrackBrowserProps> = ({ onTrackSelect }) => 
   const [selectedArtist, setSelectedArtist] = useState<string | null>(null)
   const [bpmFilter, setBpmFilter] = useState<{ min: number; max: number }>({ min: 60, max: 200 })
   const [apiError, setApiError] = useState<string | null>(null)
+  const [retryCount, setRetryCount] = useState(0)
 
   // Cache for audio features to avoid repeated API calls
   const [audioFeaturesCache, setAudioFeaturesCache] = useState<Map<string, any>>(new Map())
+
+  // Helper function to make Spotify API calls with automatic token refresh
+  const spotifyFetch = useCallback(async (url: string, options: RequestInit = {}) => {
+    if (!spotifyToken) {
+      throw new Error('No Spotify token available')
+    }
+
+    const makeRequest = async (token: string) => {
+      return await fetch(url, {
+        ...options,
+        headers: {
+          ...options.headers,
+          'Authorization': `Bearer ${token}`
+        }
+      })
+    }
+
+    let response = await makeRequest(spotifyToken)
+    
+    // If we get a 401, try to refresh the token once
+    if (response.status === 401 && retryCount === 0) {
+      console.log('Got 401, attempting to refresh token...')
+      setRetryCount(1)
+      const refreshSuccess = await refreshSpotifyToken()
+      
+      if (refreshSuccess) {
+        // Get the new token from storage since state might not be updated yet
+        const newToken = await spotifyAuthPKCE.getStoredToken()
+        if (newToken) {
+          response = await makeRequest(newToken)
+        }
+      }
+      setRetryCount(0)
+    }
+    
+    return response
+  }, [spotifyToken, refreshSpotifyToken, retryCount])
 
   // Test Spotify API connection
   const testSpotifyAPI = useCallback(async () => {
@@ -68,11 +107,7 @@ export const TrackBrowser: React.FC<TrackBrowserProps> = ({ onTrackSelect }) => 
 
     try {
       console.log('Testing Spotify API connection...')
-      const response = await fetch('https://api.spotify.com/v1/me', {
-        headers: {
-          'Authorization': `Bearer ${spotifyToken}`
-        }
-      })
+      const response = await spotifyFetch('https://api.spotify.com/v1/me')
 
       if (!response.ok) {
         const errorText = await response.text()
@@ -88,7 +123,7 @@ export const TrackBrowser: React.FC<TrackBrowserProps> = ({ onTrackSelect }) => 
       console.error('Spotify API test error:', error)
       setApiError(`Connection Error: ${error}`)
     }
-  }, [spotifyToken])
+  }, [spotifyToken, spotifyFetch])
 
   // Test API on token change
   useEffect(() => {
@@ -118,13 +153,8 @@ export const TrackBrowser: React.FC<TrackBrowserProps> = ({ onTrackSelect }) => 
     
     try {
       console.log(`Fetching audio features for ${trackIds.length} tracks`)
-      const response = await fetch(
-        `https://api.spotify.com/v1/audio-features?ids=${trackIds.join(',')}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${spotifyToken}`
-          }
-        }
+      const response = await spotifyFetch(
+        `https://api.spotify.com/v1/audio-features?ids=${trackIds.join(',')}`
       )
       
       if (!response.ok) {
@@ -136,22 +166,24 @@ export const TrackBrowser: React.FC<TrackBrowserProps> = ({ onTrackSelect }) => 
       const data = await response.json()
       const newCache = new Map(audioFeaturesCache)
       
-      data.audio_features.forEach((features: any, index: number) => {
-        if (features) {
-          newCache.set(trackIds[index], features)
-        }
-      })
+      if (data.audio_features) {
+        data.audio_features.forEach((features: any, index: number) => {
+          if (features) {
+            newCache.set(trackIds[index], features)
+          }
+        })
+      }
       
       setAudioFeaturesCache(newCache)
-      console.log(`Cached audio features for ${data.audio_features.filter((f: any) => f).length} tracks`)
+      console.log(`Cached audio features for ${data.audio_features?.filter((f: any) => f).length || 0} tracks`)
     } catch (error) {
       console.error('Error fetching audio features:', error)
       // Don't let audio features failure break track loading
     }
-  }, [spotifyToken, audioFeaturesCache])
+  }, [spotifyToken, audioFeaturesCache, spotifyFetch])
 
   // Fetch user's saved tracks
-  const fetchUserTracks = async () => {
+  const fetchUserTracks = useCallback(async () => {
     if (!spotifyToken) {
       console.log('No Spotify token available')
       return
@@ -159,17 +191,16 @@ export const TrackBrowser: React.FC<TrackBrowserProps> = ({ onTrackSelect }) => 
     
     console.log('Fetching user tracks...')
     setLoading(true)
+    setApiError(null) // Clear any previous errors
+    
     try {
-      const response = await fetch('https://api.spotify.com/v1/me/tracks?limit=50', {
-        headers: {
-          'Authorization': `Bearer ${spotifyToken}`
-        }
-      })
+      const response = await spotifyFetch('https://api.spotify.com/v1/me/tracks?limit=50')
       
       if (!response.ok) {
         const errorText = await response.text()
         console.error('Spotify API error:', response.status, errorText)
-        throw new Error(`Failed to fetch tracks: ${response.status}`)
+        setApiError(`Failed to fetch tracks: ${response.status}`)
+        return
       }
       
       const data = await response.json()
@@ -180,6 +211,7 @@ export const TrackBrowser: React.FC<TrackBrowserProps> = ({ onTrackSelect }) => 
         .filter((track: any) => track && track.id && track.name) // Ensure tracks have required fields
       console.log(`Loaded ${trackList.length} tracks`)
       setTracks(trackList)
+      setApiError(null) // Clear error on success
       
       // Fetch audio features for these tracks
       if (trackList.length > 0) {
@@ -188,153 +220,191 @@ export const TrackBrowser: React.FC<TrackBrowserProps> = ({ onTrackSelect }) => 
       }
     } catch (error) {
       console.error('Error fetching tracks:', error)
+      setApiError(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`)
     } finally {
       setLoading(false)
     }
-  }
+  }, [spotifyToken, spotifyFetch, fetchAudioFeatures])
 
   // Fetch user's playlists
-  const fetchPlaylists = async () => {
+  const fetchPlaylists = useCallback(async () => {
     if (!spotifyToken) return
     
     setLoading(true)
+    setApiError(null)
+    setPlaylists([]) // Clear old playlists to prevent stale data
+    
     try {
-      const response = await fetch('https://api.spotify.com/v1/me/playlists?limit=50', {
-        headers: {
-          'Authorization': `Bearer ${spotifyToken}`
-        }
-      })
+      const response = await spotifyFetch('https://api.spotify.com/v1/me/playlists?limit=50')
       
-      if (!response.ok) throw new Error('Failed to fetch playlists')
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('Failed to fetch playlists:', response.status, errorText)
+        setApiError(`Failed to fetch playlists: ${response.status}`)
+        return
+      }
       
       const data = await response.json()
-      setPlaylists(data.items)
+      console.log(`Loaded ${data.items.length} playlists`)
+      setPlaylists(data.items || [])
+      setApiError(null)
     } catch (error) {
       console.error('Error fetching playlists:', error)
+      setApiError(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      setPlaylists([]) // Ensure empty array on error
     } finally {
       setLoading(false)
     }
-  }
+  }, [spotifyToken, spotifyFetch])
 
   // Fetch tracks from a specific playlist
-  const fetchPlaylistTracks = async (playlistId: string) => {
+  const fetchPlaylistTracks = useCallback(async (playlistId: string) => {
     if (!spotifyToken) return
     
     setLoading(true)
+    setApiError(null)
+    
     try {
-      const response = await fetch(
-        `https://api.spotify.com/v1/playlists/${playlistId}/tracks?limit=50`,
-        {
-          headers: {
-            'Authorization': `Bearer ${spotifyToken}`
-          }
-        }
+      const response = await spotifyFetch(
+        `https://api.spotify.com/v1/playlists/${playlistId}/tracks?limit=50`
       )
       
-      if (!response.ok) throw new Error('Failed to fetch playlist tracks')
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('Failed to fetch playlist tracks:', response.status, errorText)
+        setApiError(`Failed to fetch playlist tracks: ${response.status}`)
+        return
+      }
       
       const data = await response.json()
       const trackList = data.items
         .map((item: any) => item.track)
         .filter((track: any) => track && track.id && track.name) // Ensure tracks have required fields
-      setTracks(trackList)
+      setTracks(trackList || [])
+      setApiError(null)
       
       // Fetch audio features for these tracks
-      const trackIds = trackList.map((track: SpotifyTrack) => track.id)
-      await fetchAudioFeatures(trackIds)
+      if (trackList.length > 0) {
+        const trackIds = trackList.map((track: SpotifyTrack) => track.id)
+        await fetchAudioFeatures(trackIds)
+      }
     } catch (error) {
       console.error('Error fetching playlist tracks:', error)
+      setApiError(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      setTracks([])
     } finally {
       setLoading(false)
     }
-  }
+  }, [spotifyToken, spotifyFetch, fetchAudioFeatures])
 
   // Fetch user's top artists
-  const fetchTopArtists = async () => {
+  const fetchTopArtists = useCallback(async () => {
     if (!spotifyToken) return
     
     setLoading(true)
+    setApiError(null)
+    setArtists([])
+    
     try {
-      const response = await fetch('https://api.spotify.com/v1/me/top/artists?limit=50', {
-        headers: {
-          'Authorization': `Bearer ${spotifyToken}`
-        }
-      })
+      const response = await spotifyFetch('https://api.spotify.com/v1/me/top/artists?limit=50')
       
-      if (!response.ok) throw new Error('Failed to fetch artists')
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('Failed to fetch artists:', response.status, errorText)
+        setApiError(`Failed to fetch artists: ${response.status}`)
+        return
+      }
       
       const data = await response.json()
-      setArtists(data.items)
+      console.log(`Loaded ${data.items?.length || 0} artists`)
+      setArtists(data.items || [])
+      setApiError(null)
     } catch (error) {
       console.error('Error fetching artists:', error)
+      setApiError(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      setArtists([])
     } finally {
       setLoading(false)
     }
-  }
+  }, [spotifyToken, spotifyFetch])
 
   // Fetch tracks by artist
-  const fetchArtistTracks = async (artistId: string) => {
+  const fetchArtistTracks = useCallback(async (artistId: string) => {
     if (!spotifyToken) return
     
     setLoading(true)
+    setApiError(null)
+    
     try {
-      const response = await fetch(
-        `https://api.spotify.com/v1/artists/${artistId}/top-tracks?market=US`,
-        {
-          headers: {
-            'Authorization': `Bearer ${spotifyToken}`
-          }
-        }
+      const response = await spotifyFetch(
+        `https://api.spotify.com/v1/artists/${artistId}/top-tracks?market=US`
       )
       
-      if (!response.ok) throw new Error('Failed to fetch artist tracks')
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('Failed to fetch artist tracks:', response.status, errorText)
+        setApiError(`Failed to fetch artist tracks: ${response.status}`)
+        return
+      }
       
       const data = await response.json()
-      setTracks(data.tracks)
+      setTracks(data.tracks || [])
+      setApiError(null)
       
       // Fetch audio features for these tracks
-      const trackIds = data.tracks.map((track: SpotifyTrack) => track.id)
-      await fetchAudioFeatures(trackIds)
+      if (data.tracks?.length > 0) {
+        const trackIds = data.tracks.map((track: SpotifyTrack) => track.id)
+        await fetchAudioFeatures(trackIds)
+      }
     } catch (error) {
       console.error('Error fetching artist tracks:', error)
+      setApiError(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      setTracks([])
     } finally {
       setLoading(false)
     }
-  }
+  }, [spotifyToken, spotifyFetch, fetchAudioFeatures])
 
   // Search tracks
-  const searchTracks = async (query: string) => {
+  const searchTracks = useCallback(async (query: string) => {
     if (!spotifyToken || !query) {
       if (!query) fetchUserTracks()
       return
     }
     
     setLoading(true)
+    setApiError(null)
+    
     try {
-      const response = await fetch(
-        `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=50`,
-        {
-          headers: {
-            'Authorization': `Bearer ${spotifyToken}`
-          }
-        }
+      const response = await spotifyFetch(
+        `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=50`
       )
       
-      if (!response.ok) throw new Error('Failed to search tracks')
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('Failed to search tracks:', response.status, errorText)
+        setApiError(`Failed to search tracks: ${response.status}`)
+        return
+      }
       
       const data = await response.json()
-      const trackList = data.tracks.items
+      const trackList = data.tracks?.items || []
       setTracks(trackList)
+      setApiError(null)
       
       // Fetch audio features for search results
-      const trackIds = trackList.map((track: SpotifyTrack) => track.id)
-      await fetchAudioFeatures(trackIds)
+      if (trackList.length > 0) {
+        const trackIds = trackList.map((track: SpotifyTrack) => track.id)
+        await fetchAudioFeatures(trackIds)
+      }
     } catch (error) {
       console.error('Error searching tracks:', error)
+      setApiError(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      setTracks([])
     } finally {
       setLoading(false)
     }
-  }
+  }, [spotifyToken, spotifyFetch, fetchAudioFeatures, fetchUserTracks])
 
   // Filter tracks based on current filters
   const getFilteredTracks = () => {
@@ -381,7 +451,7 @@ export const TrackBrowser: React.FC<TrackBrowserProps> = ({ onTrackSelect }) => 
     } else if (viewMode === 'artists') {
       fetchTopArtists()
     }
-  }, [spotifyToken, viewMode])
+  }, [spotifyToken, viewMode, fetchUserTracks, fetchPlaylists, fetchTopArtists])
 
   useEffect(() => {
     if (viewMode === 'search') {
@@ -392,7 +462,7 @@ export const TrackBrowser: React.FC<TrackBrowserProps> = ({ onTrackSelect }) => 
       }, 300)
       return () => clearTimeout(delayDebounce)
     }
-  }, [searchQuery, viewMode])
+  }, [searchQuery, viewMode, searchTracks])
 
   return (
     <div className="bg-gray-800 rounded-lg p-6 h-full flex flex-col">
@@ -511,13 +581,31 @@ export const TrackBrowser: React.FC<TrackBrowserProps> = ({ onTrackSelect }) => 
             <div className="text-red-200 text-sm">{apiError}</div>
             <button
               onClick={async () => {
-                await refreshSpotifyToken()
-                // Re-test API after refreshing token
-                setTimeout(testSpotifyAPI, 500)
+                setApiError(null)
+                const success = await refreshSpotifyToken()
+                if (success) {
+                  // Retry the current view's fetch
+                  if (viewMode === 'library') {
+                    await fetchUserTracks()
+                  } else if (viewMode === 'playlists') {
+                    await fetchPlaylists()
+                  } else if (viewMode === 'artists') {
+                    await fetchTopArtists()
+                  }
+                } else {
+                  setApiError('Failed to refresh token. Please sign in again.')
+                }
               }}
-              className="mt-2 px-3 py-1 bg-red-700 hover:bg-red-600 text-white text-xs rounded"
+              className="mt-2 px-3 py-1 bg-red-700 hover:bg-red-600 text-white text-xs rounded disabled:opacity-50"
+              disabled={refreshing || loading}
             >
-              Refresh Token & Retry
+              {refreshing ? 'Refreshing...' : 'Refresh Token & Retry'}
+            </button>
+            <button
+              onClick={() => window.location.href = '/'}
+              className="mt-2 ml-2 px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white text-xs rounded"
+            >
+              Sign In Again
             </button>
           </div>
         )}
