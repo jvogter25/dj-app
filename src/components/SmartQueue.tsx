@@ -34,7 +34,14 @@ export const SmartQueue: React.FC<SmartQueueProps> = ({ currentTrack, onTrackSel
 
   // Generate smart suggestions based on current track
   const generateSuggestions = useCallback(async () => {
-    console.log('SmartQueue: Current track data:', currentTrack)
+    console.log('SmartQueue: Generating suggestions for:', {
+      name: currentTrack?.name,
+      bpm: currentTrack?.bpm,
+      camelotKey: currentTrack?.camelotKey,
+      energy: currentTrack?.energy,
+      valence: currentTrack?.valence,
+      hasAudioFeatures: !!currentTrack?.audio_features
+    })
     
     if (!currentTrack?.bpm || !currentTrack?.camelotKey || currentTrack.camelotKey === 'Unknown') {
       console.log('Cannot generate suggestions - missing track features', {
@@ -48,10 +55,45 @@ export const SmartQueue: React.FC<SmartQueueProps> = ({ currentTrack, onTrackSel
     setLoading(true)
     try {
       const allTracks = await trackDB.getAllTracks()
-      console.log(`Analyzing ${allTracks.length} tracks for suggestions`)
+      console.log(`Found ${allTracks.length} tracks in database for suggestions`)
 
-      // Filter out current track
-      const availableTracks = allTracks.filter(t => t.id !== currentTrack.id)
+      // Filter out current track and tracks without required data
+      const availableTracks = allTracks.filter(t => 
+        t.id !== currentTrack.id && 
+        t.tempo && 
+        t.camelotKey && 
+        t.camelotKey !== 'Unknown'
+      )
+      
+      console.log(`${availableTracks.length} tracks available for matching after filtering`)
+      
+      // If no tracks available, show empty suggestions
+      if (availableTracks.length === 0) {
+        setSuggestions([
+          {
+            type: 'down',
+            title: 'Bring It Down',
+            icon: <TrendingDown className="w-4 h-4" />,
+            description: 'Lower energy, smoother vibes',
+            tracks: []
+          },
+          {
+            type: 'same',
+            title: 'Keep The Vibe',
+            icon: <Minus className="w-4 h-4" />,
+            description: 'Similar energy and mood',
+            tracks: []
+          },
+          {
+            type: 'up',
+            title: 'Pump It Up',
+            icon: <TrendingUp className="w-4 h-4" />,
+            description: 'Higher energy, build the crowd',
+            tracks: []
+          }
+        ])
+        return
+      }
 
       // Calculate compatibility scores
       const scoredTracks = availableTracks.map(track => {
@@ -116,7 +158,7 @@ export const SmartQueue: React.FC<SmartQueueProps> = ({ currentTrack, onTrackSel
 
   // Generate suggestions when current track changes
   useEffect(() => {
-    if (currentTrack?.audio_features) {
+    if (currentTrack?.bpm && currentTrack?.camelotKey) {
       generateSuggestions()
     }
   }, [currentTrack, generateSuggestions])
@@ -187,13 +229,34 @@ export const SmartQueue: React.FC<SmartQueueProps> = ({ currentTrack, onTrackSel
               
               {selectedSuggestions.tracks.length === 0 ? (
                 <div className="text-center py-4 text-gray-500 text-sm">
-                  No suggestions available
+                  <p>No suggestions available</p>
+                  <p className="text-xs mt-1">Load more tracks to build your music library</p>
                 </div>
               ) : (
                 selectedSuggestions.tracks.map((track) => (
                   <div
                     key={track.id}
-                    onClick={() => onTrackSelect(track, targetDeck)}
+                    onClick={() => {
+                      // Pass the track with all its analyzed data
+                      const enrichedTrack = {
+                        ...track,
+                        bpm: track.tempo,
+                        audio_features: {
+                          tempo: track.tempo,
+                          energy: track.energy,
+                          danceability: track.danceability,
+                          valence: track.valence,
+                          key: track.key,
+                          mode: track.mode,
+                          time_signature: track.time_signature,
+                          loudness: track.loudness,
+                          acousticness: track.acousticness,
+                          instrumentalness: track.instrumentalness,
+                          speechiness: track.speechiness
+                        }
+                      }
+                      onTrackSelect(enrichedTrack, targetDeck)
+                    }}
                     className="p-2 bg-gray-700 hover:bg-gray-600 rounded cursor-pointer transition-colors"
                   >
                     <div className="flex items-center justify-between">
