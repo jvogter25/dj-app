@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { Search, Music, Clock, Loader, List, User, Filter, Zap } from 'lucide-react'
+import { Search, Music, Clock, Loader, List, User, Filter, Zap, History } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { spotifyAuthPKCE } from '../lib/spotifyPKCE'
 
@@ -38,7 +38,7 @@ interface SpotifyArtist {
   genres: string[]
 }
 
-type ViewMode = 'library' | 'playlists' | 'artists' | 'search'
+type ViewMode = 'library' | 'recent' | 'playlists' | 'artists' | 'search'
 type FilterType = 'all' | 'bpm' | 'artist' | 'title'
 
 interface TrackBrowserProps {
@@ -220,6 +220,58 @@ export const TrackBrowser: React.FC<TrackBrowserProps> = ({ onTrackSelect }) => 
       }
     } catch (error) {
       console.error('Error fetching tracks:', error)
+      setApiError(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    } finally {
+      setLoading(false)
+    }
+  }, [spotifyToken, spotifyFetch, fetchAudioFeatures])
+
+  // Fetch recently played tracks
+  const fetchRecentlyPlayed = useCallback(async () => {
+    if (!spotifyToken) {
+      console.log('No Spotify token available')
+      return
+    }
+    
+    console.log('Fetching recently played tracks...')
+    setLoading(true)
+    setApiError(null)
+    
+    try {
+      const response = await spotifyFetch('https://api.spotify.com/v1/me/player/recently-played?limit=50')
+      
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('Spotify API error:', response.status, errorText)
+        setApiError(`Failed to fetch recent tracks: ${response.status}`)
+        return
+      }
+      
+      const data = await response.json()
+      console.log('Recently played response:', data)
+      
+      // Extract unique tracks (remove duplicates)
+      const uniqueTracks = new Map()
+      data.items.forEach((item: any) => {
+        if (item.track && item.track.id) {
+          uniqueTracks.set(item.track.id, item.track)
+        }
+      })
+      
+      const trackList = Array.from(uniqueTracks.values())
+        .filter((track: any) => track && track.id && track.name)
+      
+      console.log(`Loaded ${trackList.length} recent tracks`)
+      setTracks(trackList)
+      setApiError(null)
+      
+      // Fetch audio features for these tracks
+      if (trackList.length > 0) {
+        const trackIds = trackList.map((track: SpotifyTrack) => track.id)
+        await fetchAudioFeatures(trackIds)
+      }
+    } catch (error) {
+      console.error('Error fetching recent tracks:', error)
       setApiError(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`)
     } finally {
       setLoading(false)
@@ -451,12 +503,14 @@ export const TrackBrowser: React.FC<TrackBrowserProps> = ({ onTrackSelect }) => 
     
     if (viewMode === 'library') {
       fetchUserTracks()
+    } else if (viewMode === 'recent') {
+      fetchRecentlyPlayed()
     } else if (viewMode === 'playlists') {
       fetchPlaylists()
     } else if (viewMode === 'artists') {
       fetchTopArtists()
     }
-  }, [spotifyToken, viewMode, fetchUserTracks, fetchPlaylists, fetchTopArtists])
+  }, [spotifyToken, viewMode, fetchUserTracks, fetchRecentlyPlayed, fetchPlaylists, fetchTopArtists])
 
   useEffect(() => {
     if (viewMode === 'search') {
@@ -496,7 +550,16 @@ export const TrackBrowser: React.FC<TrackBrowserProps> = ({ onTrackSelect }) => 
             }`}
           >
             <Music className="w-4 h-4" />
-            Library
+            Liked
+          </button>
+          <button
+            onClick={() => { setViewMode('recent'); setSelectedPlaylist(null); setSelectedArtist(null) }}
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg font-medium transition-colors ${
+              viewMode === 'recent' ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+            }`}
+          >
+            <History className="w-4 h-4" />
+            Recent
           </button>
           <button
             onClick={() => { setViewMode('playlists'); setSelectedPlaylist(null); setSelectedArtist(null) }}
@@ -528,7 +591,7 @@ export const TrackBrowser: React.FC<TrackBrowserProps> = ({ onTrackSelect }) => 
         </div>
 
         {/* Search Bar (for search mode or filtering) */}
-        {(viewMode === 'search' || viewMode === 'library') && (
+        {(viewMode === 'search' || viewMode === 'library' || viewMode === 'recent') && (
           <div className="relative mb-4">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
@@ -605,6 +668,8 @@ export const TrackBrowser: React.FC<TrackBrowserProps> = ({ onTrackSelect }) => 
                   // Retry the current view's fetch
                   if (viewMode === 'library') {
                     await fetchUserTracks()
+                  } else if (viewMode === 'recent') {
+                    await fetchRecentlyPlayed()
                   } else if (viewMode === 'playlists') {
                     await fetchPlaylists()
                   } else if (viewMode === 'artists') {
@@ -629,14 +694,20 @@ export const TrackBrowser: React.FC<TrackBrowserProps> = ({ onTrackSelect }) => 
         )}
 
         {/* Manual Refresh Button */}
-        {viewMode === 'library' && (
+        {(viewMode === 'library' || viewMode === 'recent') && (
           <div className="mb-4">
             <button
-              onClick={() => fetchUserTracks()}
+              onClick={() => {
+                if (viewMode === 'library') {
+                  fetchUserTracks()
+                } else if (viewMode === 'recent') {
+                  fetchRecentlyPlayed()
+                }
+              }}
               className="w-full py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
               disabled={loading}
             >
-              {loading ? 'Loading...' : 'Refresh Library'}
+              {loading ? 'Loading...' : `Refresh ${viewMode === 'library' ? 'Liked Songs' : 'Recent Tracks'}`}
             </button>
           </div>
         )}

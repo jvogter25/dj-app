@@ -12,6 +12,8 @@ const SCOPES = [
   'playlist-read-private',
   'playlist-read-collaborative',
   'user-read-currently-playing',
+  'user-read-recently-played',
+  'user-top-read',
   'app-remote-control'
 ].join(' ')
 
