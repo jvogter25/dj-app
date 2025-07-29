@@ -29,16 +29,16 @@ export const DJInterface: React.FC = () => {
   console.log('Deck B state:', deckB.playerState)
   console.log('Crossfader position:', crossfaderPosition)
 
-  // Handle track loading to Web Audio players
+  // Handle track loading to Spotify players
   const handleTrackSelect = async (track: any, deck: 'A' | 'B') => {
     console.log(`Loading ${track.name} to Deck ${deck}`)
     setLoadedTracks(prev => ({ ...prev, [deck]: track }))
     
-    // Load to Web Audio player
+    // Load to Spotify player using URI
     if (deck === 'A') {
-      await deckA.loadTrack(track)
+      await deckA.loadTrack(track.uri)
     } else {
-      await deckB.loadTrack(track)
+      await deckB.loadTrack(track.uri)
     }
   }
 

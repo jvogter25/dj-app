@@ -1,9 +1,9 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
-import { useWebAudioPlayer } from '../hooks/useWebAudioPlayer'
+import { useSpotifyPlayer } from '../hooks/useSpotifyPlayer'
 
 interface PlayerContextType {
-  deckA: ReturnType<typeof useWebAudioPlayer>
-  deckB: ReturnType<typeof useWebAudioPlayer>
+  deckA: ReturnType<typeof useSpotifyPlayer>
+  deckB: ReturnType<typeof useSpotifyPlayer>
   crossfaderPosition: number
   setCrossfaderPosition: (position: number) => void
   masterVolume: number
@@ -25,8 +25,8 @@ export const usePlayer = () => {
 }
 
 export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const deckA = useWebAudioPlayer('Deck A')
-  const deckB = useWebAudioPlayer('Deck B')
+  const deckA = useSpotifyPlayer('Deck A')
+  const deckB = useSpotifyPlayer('Deck B')
   const [crossfaderPosition, setCrossfaderPosition] = useState(0)
   const [masterVolume, setMasterVolume] = useState(75)
   const [channelAVolume, setChannelAVolume] = useState(75)

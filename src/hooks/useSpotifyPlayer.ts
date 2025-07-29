@@ -22,6 +22,7 @@ export const useSpotifyPlayer = (playerId: string) => {
     duration: 0,
     volume: 0.75
   })
+  const [tempo, setTempo] = useState(0) // Tempo adjustment percentage (-10 to +10)
   
   const playerRef = useRef<any | null>(null)
 
@@ -154,16 +155,26 @@ export const useSpotifyPlayer = (playerId: string) => {
     player.pause()
   }, [player])
 
+  // Note: Spotify Web Playback SDK doesn't support tempo/pitch adjustment
+  // This is a limitation of the SDK. For now, we'll track the tempo value
+  // but can't actually apply it to Spotify playback
+  const setTempoAdjustment = useCallback((tempoPercent: number) => {
+    setTempo(tempoPercent)
+    console.warn('Tempo adjustment not supported by Spotify Web Playback SDK')
+  }, [])
+
   return {
     player,
     deviceId,
     playerState,
+    tempo,
     loadTrack,
     togglePlay,
     pause,
     resume,
     seek,
     setVolume,
-    cue
+    cue,
+    setTempoAdjustment
   }
 }
