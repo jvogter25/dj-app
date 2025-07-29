@@ -14,6 +14,8 @@ interface DeckProps {
     name: string
     artists: { name: string }[]
     album: { images: { url: string }[] }
+    bpm?: number
+    isEnhanced?: boolean
   }
   playerState?: {
     position: number
@@ -34,6 +36,11 @@ export const Deck: React.FC<DeckProps> = ({
   playerState
 }) => {
   const deckColor = deckId === 'A' ? 'blue' : 'green'
+  
+  // EQ states
+  const [highEQ, setHighEQ] = React.useState(0)
+  const [midEQ, setMidEQ] = React.useState(0)
+  const [lowEQ, setLowEQ] = React.useState(0)
   
   // Gesture controls for tempo slider
   const tempoGestures = useGestureControls({
@@ -94,21 +101,41 @@ export const Deck: React.FC<DeckProps> = ({
       <div className="bg-gray-900 h-24 rounded mb-4 relative overflow-hidden">
         {loadedTrack ? (
           <>
-            {/* Progress bar */}
+            {/* Waveform visualization placeholder */}
+            <div className="absolute inset-0 flex items-end justify-center px-2">
+              {/* Generate fake waveform bars */}
+              {Array.from({ length: 60 }, (_, i) => {
+                const height = Math.sin(i * 0.2) * 30 + Math.random() * 40 + 20
+                const isPlayed = (i / 60) * 100 < progress
+                return (
+                  <div
+                    key={i}
+                    className={`flex-1 mx-px transition-all duration-100 ${
+                      isPlayed ? `bg-${deckColor}-400` : 'bg-gray-600'
+                    }`}
+                    style={{ height: `${height}%` }}
+                  />
+                )
+              })}
+            </div>
+            {/* Progress line */}
             <div 
-              className={`absolute top-0 left-0 h-full bg-${deckColor}-500 opacity-20 transition-all duration-100`}
-              style={{ width: `${progress}%` }}
+              className={`absolute top-0 bottom-0 w-0.5 bg-white transition-all duration-100`}
+              style={{ left: `${progress}%` }}
             />
-            {/* Time display */}
-            <div className="absolute bottom-1 left-2 text-xs text-gray-400">
+            {/* Time display overlay */}
+            <div className="absolute bottom-1 left-2 text-xs text-white font-mono bg-black bg-opacity-50 px-1 rounded">
               {playerState ? formatTime(playerState.position) : '0:00'}
             </div>
-            <div className="absolute bottom-1 right-2 text-xs text-gray-400">
+            <div className="absolute bottom-1 right-2 text-xs text-white font-mono bg-black bg-opacity-50 px-1 rounded">
               {playerState ? formatTime(playerState.duration) : '0:00'}
             </div>
-            <div className="flex items-center justify-center h-full">
-              <span className="text-gray-500 text-sm">Waveform Loading...</span>
-            </div>
+            {/* Status indicator */}
+            {!playerState?.isReady && (
+              <div className="absolute top-2 left-2 text-xs text-yellow-400 bg-black bg-opacity-75 rounded px-2 py-1">
+                Activating Spotify device...
+              </div>
+            )}
           </>
         ) : (
           <div className="flex items-center justify-center h-full">
@@ -125,6 +152,11 @@ export const Deck: React.FC<DeckProps> = ({
             <div className="text-gray-400 text-sm truncate">
               {loadedTrack.artists?.map(a => a.name).join(', ') || 'Unknown Artist'}
             </div>
+            {loadedTrack.bpm && (
+              <div className="text-xs text-gray-500 mt-1">
+                BPM: <span className="text-purple-400 font-mono">{loadedTrack.bpm}</span>
+              </div>
+            )}
           </>
         ) : (
           <>
@@ -138,13 +170,15 @@ export const Deck: React.FC<DeckProps> = ({
       <div className="flex gap-2 mb-4">
         <button
           onClick={onCue}
-          className={`p-3 bg-${deckColor}-600 hover:bg-${deckColor}-700 rounded-lg transition-colors`}
+          className={`p-3 bg-${deckColor}-600 hover:bg-${deckColor}-700 active:bg-${deckColor}-800 rounded-lg transition-all transform active:scale-95`}
+          title="Cue (Reset to start)"
         >
           <RotateCcw className="w-5 h-5" />
         </button>
         <button
           onClick={onPlayPause}
-          className={`p-3 bg-${deckColor}-600 hover:bg-${deckColor}-700 rounded-lg transition-colors flex-1`}
+          className={`p-3 bg-${deckColor}-600 hover:bg-${deckColor}-700 active:bg-${deckColor}-800 rounded-lg transition-all transform active:scale-95 flex-1`}
+          title={isPlaying ? "Pause" : "Play"}
         >
           {isPlaying ? <Pause className="w-5 h-5 mx-auto" /> : <Play className="w-5 h-5 mx-auto" />}
         </button>
@@ -179,12 +213,37 @@ export const Deck: React.FC<DeckProps> = ({
       
       {/* EQ Knobs */}
       <div className="grid grid-cols-3 gap-2">
-        {['High', 'Mid', 'Low'].map((band) => (
+        {[
+          { band: 'High', value: highEQ, setValue: setHighEQ, color: 'red' },
+          { band: 'Mid', value: midEQ, setValue: setMidEQ, color: 'yellow' },
+          { band: 'Low', value: lowEQ, setValue: setLowEQ, color: 'blue' }
+        ].map(({ band, value, setValue, color: bandColor }) => (
           <div key={band} className="text-center">
-            <div className="w-12 h-12 bg-gray-700 rounded-full mx-auto mb-1 flex items-center justify-center">
-              <div className="w-2 h-6 bg-gray-400 rounded"></div>
+            <div className="relative">
+              <input
+                type="range"
+                min="-20"
+                max="20"
+                value={value}
+                onChange={(e) => {
+                  const newValue = parseInt(e.target.value)
+                  setValue(newValue)
+                  console.log(`[${deckId}] ${band} EQ:`, newValue)
+                }}
+                className="absolute inset-0 w-12 h-12 opacity-0 cursor-pointer mx-auto"
+                title={`${band} frequency adjustment`}
+              />
+              <div className={`w-12 h-12 bg-gray-700 hover:bg-gray-600 rounded-full mx-auto mb-1 flex items-center justify-center transition-all border-2 ${value !== 0 ? `border-${bandColor}-500` : 'border-transparent'}`}>
+                <div 
+                  className={`w-2 h-6 ${value !== 0 ? `bg-${bandColor}-500` : 'bg-gray-400'} rounded transition-all`}
+                  style={{ transform: `rotate(${value * 9}deg)` }}
+                />
+              </div>
             </div>
             <span className="text-xs text-gray-400">{band}</span>
+            <div className={`text-xs font-mono ${value !== 0 ? `text-${bandColor}-400` : 'text-gray-600'}`}>
+              {value > 0 ? '+' : ''}{value}
+            </div>
           </div>
         ))}
       </div>

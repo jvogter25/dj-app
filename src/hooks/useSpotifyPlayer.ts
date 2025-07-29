@@ -33,48 +33,63 @@ export const useSpotifyPlayer = (playerId: string) => {
 
   // Initialize player
   useEffect(() => {
-    if (!spotifyToken || !window.Spotify) return
+    console.log(`[${playerId}] Initializing player...`, { hasToken: !!spotifyToken, hasSpotifySdk: !!window.Spotify })
+    if (!spotifyToken || !window.Spotify) {
+      console.warn(`[${playerId}] Missing requirements:`, { token: !!spotifyToken, sdk: !!window.Spotify })
+      return
+    }
 
     const initPlayer = () => {
+      console.log(`[${playerId}] Creating new Spotify player...`)
       const newPlayer = new (window as any).Spotify.Player({
         name: `DJ Studio - ${playerId}`,
-        getOAuthToken: (cb: (token: string) => void) => { cb(spotifyToken) },
+        getOAuthToken: (cb: (token: string) => void) => { 
+          console.log(`[${playerId}] Token requested`)
+          cb(spotifyToken) 
+        },
         volume: 0.75
       })
 
       // Error handling
       newPlayer.addListener('initialization_error', ({ message }: any) => {
-        console.error('Failed to initialize', message)
+        console.error(`[${playerId}] Initialization error:`, message)
+        setPlayerState(prev => ({ ...prev, isReady: false }))
       })
 
       newPlayer.addListener('authentication_error', ({ message }: any) => {
-        console.error('Failed to authenticate', message)
+        console.error(`[${playerId}] Authentication error:`, message)
+        setPlayerState(prev => ({ ...prev, isReady: false }))
       })
 
       newPlayer.addListener('account_error', ({ message }: any) => {
-        console.error('Failed to validate account', message)
+        console.error(`[${playerId}] Account error:`, message)
+        setPlayerState(prev => ({ ...prev, isReady: false }))
       })
 
       newPlayer.addListener('playback_error', ({ message }: any) => {
-        console.error('Failed to perform playback', message)
+        console.error(`[${playerId}] Playback error:`, message)
       })
 
       // Ready
       newPlayer.addListener('ready', ({ device_id }: any) => {
-        console.log(`Player ${playerId} ready with Device ID`, device_id)
+        console.log(`[${playerId}] ✅ Player ready! Device ID:`, device_id)
         setDeviceId(device_id)
         setPlayerState(prev => ({ ...prev, isReady: true }))
       })
 
       // Not Ready
       newPlayer.addListener('not_ready', ({ device_id }: any) => {
-        console.log('Device ID has gone offline', device_id)
+        console.warn(`[${playerId}] ⚠️ Device went offline:`, device_id)
         setPlayerState(prev => ({ ...prev, isReady: false }))
       })
 
       // Player state changed
       newPlayer.addListener('player_state_changed', (state: any) => {
-        if (!state) return
+        console.log(`[${playerId}] State changed:`, state)
+        if (!state) {
+          console.warn(`[${playerId}] State is null - player might be inactive`)
+          return
+        }
 
         setPlayerState(prev => ({
           ...prev,
@@ -86,7 +101,13 @@ export const useSpotifyPlayer = (playerId: string) => {
       })
 
       // Connect to the player!
-      newPlayer.connect()
+      console.log(`[${playerId}] Connecting player...`)
+      newPlayer.connect().then((success: boolean) => {
+        console.log(`[${playerId}] Connect result:`, success)
+        if (!success) {
+          console.error(`[${playerId}] Failed to connect player`)
+        }
+      })
       
       setPlayer(newPlayer)
       playerRef.current = newPlayer
@@ -108,10 +129,52 @@ export const useSpotifyPlayer = (playerId: string) => {
 
   // Load and play a track
   const loadTrack = useCallback(async (trackUri: string) => {
-    if (!deviceId || !spotifyToken) return
+    console.log(`[${playerId}] loadTrack called with:`, trackUri)
+    
+    if (!deviceId || !spotifyToken) {
+      console.error(`[${playerId}] Cannot load track - missing requirements:`, { 
+        deviceId, 
+        hasToken: !!spotifyToken,
+        playerReady: playerState.isReady 
+      })
+      return false
+    }
 
     try {
-      await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
+      console.log(`[${playerId}] Step 1: Transferring playback to device ${deviceId}...`)
+      
+      // First, transfer playback to this device
+      const transferResponse = await fetch('https://api.spotify.com/v1/me/player', {
+        method: 'PUT',
+        body: JSON.stringify({
+          device_ids: [deviceId],
+          play: false
+        }),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${spotifyToken}`
+        }
+      })
+
+      console.log(`[${playerId}] Transfer response:`, transferResponse.status)
+      
+      if (!transferResponse.ok && transferResponse.status !== 204) {
+        const errorText = await transferResponse.text()
+        console.error(`[${playerId}] Transfer failed:`, errorText)
+        
+        // If 404, no active device - this is expected
+        if (transferResponse.status === 404) {
+          console.log(`[${playerId}] No active device found, this is normal`)
+        }
+      }
+
+      // Wait a bit for transfer to complete
+      console.log(`[${playerId}] Waiting for transfer to complete...`)
+      await new Promise(resolve => setTimeout(resolve, 500))
+
+      // Now play the track
+      console.log(`[${playerId}] Step 2: Playing track...`)
+      const playResponse = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
         method: 'PUT',
         body: JSON.stringify({
           uris: [trackUri],
@@ -122,43 +185,72 @@ export const useSpotifyPlayer = (playerId: string) => {
           'Authorization': `Bearer ${spotifyToken}`
         }
       })
+
+      console.log(`[${playerId}] Play response:`, playResponse.status)
+
+      if (!playResponse.ok && playResponse.status !== 204) {
+        const errorText = await playResponse.text()
+        console.error(`[${playerId}] Play failed:`, errorText)
+        
+        // Common error: Device not found
+        if (errorText.includes('Device not found')) {
+          console.error(`[${playerId}] Device ${deviceId} not found. Player might need reconnection.`)
+          setPlayerState(prev => ({ ...prev, isReady: false }))
+        }
+        
+        return false
+      } else {
+        console.log(`[${playerId}] ✅ Track loaded successfully!`)
+        return true
+      }
     } catch (error) {
-      console.error('Error loading track:', error)
+      console.error(`[${playerId}] Exception during track load:`, error)
+      return false
     }
-  }, [deviceId, spotifyToken])
+  }, [deviceId, spotifyToken, playerId, playerState.isReady])
 
   // Playback controls
   const togglePlay = useCallback(() => {
-    if (!player) return
-    player.togglePlay()
-  }, [player])
+    console.log(`[${playerId}] togglePlay called, player exists:`, !!player)
+    if (!player) {
+      console.warn(`[${playerId}] No player instance`)
+      return
+    }
+    player.togglePlay().catch((e: any) => console.error(`[${playerId}] togglePlay error:`, e))
+  }, [player, playerId])
 
   const pause = useCallback(() => {
+    console.log(`[${playerId}] pause called`)
     if (!player) return
-    player.pause()
-  }, [player])
+    player.pause().catch((e: any) => console.error(`[${playerId}] pause error:`, e))
+  }, [player, playerId])
 
   const resume = useCallback(() => {
+    console.log(`[${playerId}] resume called`)
     if (!player) return
-    player.resume()
-  }, [player])
+    player.resume().catch((e: any) => console.error(`[${playerId}] resume error:`, e))
+  }, [player, playerId])
 
   const seek = useCallback((position: number) => {
+    console.log(`[${playerId}] seek called to position:`, position)
     if (!player) return
-    player.seek(position)
-  }, [player])
+    player.seek(position).catch((e: any) => console.error(`[${playerId}] seek error:`, e))
+  }, [player, playerId])
 
   const setVolume = useCallback((volume: number) => {
+    console.log(`[${playerId}] setVolume called:`, volume)
     if (!player) return
-    player.setVolume(volume / 100)
-    setPlayerState(prev => ({ ...prev, volume: volume / 100 }))
-  }, [player])
+    const normalizedVolume = volume / 100
+    player.setVolume(normalizedVolume).catch((e: any) => console.error(`[${playerId}] setVolume error:`, e))
+    setPlayerState(prev => ({ ...prev, volume: normalizedVolume }))
+  }, [player, playerId])
 
   const cue = useCallback(() => {
+    console.log(`[${playerId}] cue called`)
     if (!player) return
-    player.seek(0)
-    player.pause()
-  }, [player])
+    player.seek(0).then(() => player.pause())
+      .catch((e: any) => console.error(`[${playerId}] cue error:`, e))
+  }, [player, playerId])
 
   // Enhanced tempo control with Web Audio API
   const initAudioProcessing = useCallback(async () => {
@@ -240,33 +332,15 @@ export const useSpotifyPlayer = (playerId: string) => {
     console.log(`Enhanced mode disabled for ${playerId}`)
   }, [playerId])
 
-  // Enhanced tempo control
-  const setTempoAdjustment = useCallback(async (tempoPercent: number) => {
+  // Tempo control (visual only for now - Spotify doesn't support playback rate)
+  const setTempoAdjustment = useCallback((tempoPercent: number) => {
+    console.log(`[${playerId}] Tempo adjustment set to:`, tempoPercent)
     setTempo(tempoPercent)
     
-    if (tempoPercent === 0) {
-      // Return to normal Spotify playback
-      if (isEnhanced) {
-        disableEnhancedMode()
-        // Resume Spotify playback
-        if (player) {
-          player.resume()
-        }
-      }
-    } else {
-      // Enable enhanced mode for tempo adjustment
-      if (!isEnhanced) {
-        await enableEnhancedMode()
-      }
-      
-      // Apply tempo adjustment
-      if (audioElementRef.current) {
-        const playbackRate = 1 + (tempoPercent / 100)
-        audioElementRef.current.playbackRate = Math.max(0.25, Math.min(4.0, playbackRate))
-        console.log(`Tempo adjusted to ${tempoPercent}% (${playbackRate}x) on ${playerId}`)
-      }
-    }
-  }, [isEnhanced, enableEnhancedMode, disableEnhancedMode, player, playerId])
+    // Note: Spotify Web Playback SDK doesn't support tempo adjustment
+    // This is just for visual feedback and future implementation
+    // Would need to use Web Audio API with local files or preview URLs
+  }, [playerId])
 
   // Cleanup on unmount
   useEffect(() => {

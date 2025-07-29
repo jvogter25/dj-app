@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Deck } from './Deck'
 import { Mixer } from './Mixer'
 import { TrackBrowser } from './TrackBrowser'
@@ -6,8 +6,10 @@ import { GestureHelp } from './GestureHelp'
 import { SmartTransition, TransitionType } from './SmartTransition'
 import { LoopCapture } from './LoopCapture'
 import { EffectsPanel, EffectSettings } from './EffectsPanel'
+import { SetupWizard } from './SetupWizard'
+import { SmartQueue } from './SmartQueue'
 import ErrorBoundary from './ErrorBoundary'
-import { Library, Settings, Radio, X, ChevronUp, ChevronDown } from 'lucide-react'
+import { Library, Settings, Radio, X, ChevronUp, ChevronDown, HelpCircle } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { usePlayer } from '../contexts/PlayerContext'
 
@@ -27,6 +29,7 @@ export const DJInterface: React.FC = () => {
   const [showLibrary, setShowLibrary] = useState(true)
   const [libraryExpanded, setLibraryExpanded] = useState(true)
   const [showSettings, setShowSettings] = useState(false)
+  const [showSetupWizard, setShowSetupWizard] = useState(false)
   const [loadedTracks, setLoadedTracks] = useState<{ A?: any, B?: any }>({})
   
   // Effects state
@@ -36,6 +39,14 @@ export const DJInterface: React.FC = () => {
   const [deckBEffects, setDeckBEffects] = useState<EffectSettings>({
     reverb: 0, delay: 0, filter: 0, bitcrush: 0, phaser: 0, flanger: 0
   })
+
+  // Show setup wizard on first visit
+  useEffect(() => {
+    const hasSeenSetup = localStorage.getItem('djStudioSetupComplete')
+    if (!hasSeenSetup) {
+      setShowSetupWizard(true)
+    }
+  }, [])
 
   // Handle track loading to Spotify players
   const handleTrackSelect = async (track: any, deck: 'A' | 'B') => {
@@ -81,7 +92,7 @@ export const DJInterface: React.FC = () => {
             <Radio className="w-6 h-6 text-purple-500" />
             DJ Studio
           </h1>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
             <button 
               onClick={() => setShowLibrary(!showLibrary)}
               className={`p-2 rounded-lg transition-colors ${
@@ -90,6 +101,13 @@ export const DJInterface: React.FC = () => {
               title="Toggle Library"
             >
               <Library className="w-5 h-5" />
+            </button>
+            <button 
+              onClick={() => setShowSetupWizard(true)}
+              className="p-2 rounded-lg hover:bg-gray-700 transition-colors"
+              title="Help"
+            >
+              <HelpCircle className="w-5 h-5" />
             </button>
             <button 
               onClick={() => setShowSettings(!showSettings)}
@@ -196,9 +214,24 @@ export const DJInterface: React.FC = () => {
             </div>
           </div>
 
-          {/* Bottom Section - Track Browser */}
+          {/* Bottom Section - Track Browser & Smart Queue */}
           {showLibrary && (
-            <div className="mt-6">
+            <div className="mt-6 space-y-4">
+              {/* Smart Queue */}
+              {(deckA.playerState.currentTrack || loadedTracks.A) && (
+                <SmartQueue
+                  currentTrack={{
+                    ...(deckA.playerState.currentTrack || loadedTracks.A),
+                    camelotKey: loadedTracks.A?.camelotKey,
+                    energy: loadedTracks.A?.energy,
+                    valence: loadedTracks.A?.valence
+                  }}
+                  onTrackSelect={handleTrackSelect}
+                  targetDeck="B"
+                />
+              )}
+              
+              {/* Track Browser */}
               <div className="bg-gray-800 rounded-lg">
                 {/* Collapsible Header */}
                 <button
@@ -258,6 +291,41 @@ export const DJInterface: React.FC = () => {
                   </button>
                 </div>
                 <div className="space-y-4">
+                  {/* Playback Status */}
+                  <div className="bg-gray-700 rounded-lg p-4">
+                    <h3 className="font-semibold mb-2 flex items-center gap-2">
+                      <Radio className="w-4 h-4 text-purple-500" />
+                      Playback Status
+                    </h3>
+                    <div className="text-sm space-y-2">
+                      <p className="text-gray-300">
+                        Deck A: {deckA.playerState.isReady ? 
+                          <span className="text-green-400">✅ Ready</span> : 
+                          <span className="text-yellow-400">⏳ Connecting...</span>}
+                        {deckA.deviceId && (
+                          <span className="text-xs text-gray-500 ml-2">ID: {deckA.deviceId.slice(0, 8)}...</span>
+                        )}
+                      </p>
+                      <p className="text-gray-300">
+                        Deck B: {deckB.playerState.isReady ? 
+                          <span className="text-green-400">✅ Ready</span> : 
+                          <span className="text-yellow-400">⏳ Connecting...</span>}
+                        {deckB.deviceId && (
+                          <span className="text-xs text-gray-500 ml-2">ID: {deckB.deviceId.slice(0, 8)}...</span>
+                        )}
+                      </p>
+                    </div>
+                    <div className="mt-3 p-2 bg-gray-800 rounded text-xs">
+                      <p className="text-yellow-400 font-semibold mb-1">⚠️ Troubleshooting Tips:</p>
+                      <ul className="text-gray-400 space-y-1 ml-4 list-disc">
+                        <li>Pause Spotify on all other devices first</li>
+                        <li>Refresh page if players don't connect</li>
+                        <li>Check browser console for errors (F12)</li>
+                        <li>Premium account required for playback</li>
+                      </ul>
+                    </div>
+                  </div>
+
                   <button
                     onClick={() => {
                       signOut()
@@ -280,6 +348,16 @@ export const DJInterface: React.FC = () => {
 
           {/* Gesture Help */}
           <GestureHelp />
+
+          {/* Setup Wizard */}
+          {showSetupWizard && (
+            <SetupWizard 
+              onClose={() => {
+                setShowSetupWizard(false)
+                localStorage.setItem('djStudioSetupComplete', 'true')
+              }}
+            />
+          )}
         </div>
       </main>
     </div>

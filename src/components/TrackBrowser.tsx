@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { Search, Music, Clock, Loader, List, User, Filter, Zap, History } from 'lucide-react'
+import { Search, Music, Clock, Loader, List, User, Filter, Zap, History, Activity, Smile } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { spotifyAuthPKCE } from '../lib/spotifyPKCE'
+import { trackDB, TrackAnalysis } from '../lib/trackDatabase'
+import { getCamelotKey, getCamelotColor, getKeyName } from '../lib/harmonicMixing'
 
 interface SpotifyTrack {
   id: string
@@ -148,37 +150,84 @@ export const TrackBrowser: React.FC<TrackBrowserProps> = ({ onTrackSelect }) => 
   }
 
   // Fetch audio features for tracks
-  const fetchAudioFeatures = useCallback(async (trackIds: string[]) => {
+  const fetchAudioFeatures = useCallback(async (trackIds: string[], trackData?: SpotifyTrack[]) => {
     if (!spotifyToken || trackIds.length === 0) return
     
     try {
       console.log(`Fetching audio features for ${trackIds.length} tracks`)
-      const response = await spotifyFetch(
-        `https://api.spotify.com/v1/audio-features?ids=${trackIds.join(',')}`
-      )
       
-      if (!response.ok) {
-        console.error('Audio features API error:', response.status)
-        // Don't throw error - continue without audio features
-        return
+      // Check cache first
+      const uncachedIds: string[] = []
+      const cachedFeatures = new Map()
+      
+      for (const id of trackIds) {
+        const cached = await trackDB.getTrack(id)
+        if (cached && cached.analyzedAt > Date.now() - 30 * 24 * 60 * 60 * 1000) { // 30 days cache
+          cachedFeatures.set(id, cached)
+        } else {
+          uncachedIds.push(id)
+        }
       }
       
-      const data = await response.json()
-      const newCache = new Map(audioFeaturesCache)
+      console.log(`Found ${cachedFeatures.size} cached, fetching ${uncachedIds.length} new`)
       
-      if (data.audio_features) {
-        data.audio_features.forEach((features: any, index: number) => {
-          if (features) {
-            newCache.set(trackIds[index], features)
+      if (uncachedIds.length > 0) {
+        const response = await spotifyFetch(
+          `https://api.spotify.com/v1/audio-features?ids=${uncachedIds.join(',')}`
+        )
+        
+        if (!response.ok) {
+          console.error('Audio features API error:', response.status)
+          return
+        }
+        
+        const data = await response.json()
+        const newCache = new Map(audioFeaturesCache)
+        
+        if (data.audio_features) {
+          for (let i = 0; i < data.audio_features.length; i++) {
+            const features = data.audio_features[i]
+            if (features) {
+              const trackId = uncachedIds[i]
+              newCache.set(trackId, features)
+              
+              // Save to IndexedDB if we have track data
+              if (trackData) {
+                const track = trackData.find(t => t.id === trackId)
+                if (track) {
+                  const analysis: TrackAnalysis = {
+                    id: trackId,
+                    uri: track.uri,
+                    name: track.name,
+                    artists: track.artists.map(a => a.name),
+                    album: track.album.name,
+                    duration: track.duration_ms,
+                    analyzedAt: Date.now(),
+                    ...features,
+                    camelotKey: getCamelotKey(features.key, features.mode),
+                    energyLevel: features.energy < 0.4 ? 'low' : features.energy < 0.7 ? 'medium' : 'high',
+                    moodCategory: features.valence < 0.3 ? 'dark' : features.valence < 0.7 ? 'neutral' : 'bright'
+                  }
+                  await trackDB.saveTrack(analysis)
+                }
+              }
+            }
           }
+        }
+        
+        // Merge cached and new features
+        cachedFeatures.forEach((features, id) => {
+          newCache.set(id, features)
         })
+        
+        setAudioFeaturesCache(newCache)
+        console.log(`Total audio features cached: ${newCache.size}`)
+      } else {
+        // All from cache
+        setAudioFeaturesCache(cachedFeatures)
       }
-      
-      setAudioFeaturesCache(newCache)
-      console.log(`Cached audio features for ${data.audio_features?.filter((f: any) => f).length || 0} tracks`)
     } catch (error) {
       console.error('Error fetching audio features:', error)
-      // Don't let audio features failure break track loading
     }
   }, [spotifyToken, audioFeaturesCache, spotifyFetch])
 
@@ -216,7 +265,7 @@ export const TrackBrowser: React.FC<TrackBrowserProps> = ({ onTrackSelect }) => 
       // Fetch audio features for these tracks
       if (trackList.length > 0) {
         const trackIds = trackList.map((track: SpotifyTrack) => track.id)
-        await fetchAudioFeatures(trackIds)
+        await fetchAudioFeatures(trackIds, trackList)
       }
     } catch (error) {
       console.error('Error fetching tracks:', error)
@@ -268,7 +317,7 @@ export const TrackBrowser: React.FC<TrackBrowserProps> = ({ onTrackSelect }) => 
       // Fetch audio features for these tracks
       if (trackList.length > 0) {
         const trackIds = trackList.map((track: SpotifyTrack) => track.id)
-        await fetchAudioFeatures(trackIds)
+        await fetchAudioFeatures(trackIds, trackList)
       }
     } catch (error) {
       console.error('Error fetching recent tracks:', error)
@@ -282,6 +331,7 @@ export const TrackBrowser: React.FC<TrackBrowserProps> = ({ onTrackSelect }) => 
   const fetchPlaylists = useCallback(async () => {
     if (!spotifyToken) return
     
+    console.log('fetchPlaylists called - starting playlist fetch')
     setLoading(true)
     setApiError(null)
     setPlaylists([]) // Clear old playlists to prevent stale data
@@ -297,7 +347,8 @@ export const TrackBrowser: React.FC<TrackBrowserProps> = ({ onTrackSelect }) => 
       }
       
       const data = await response.json()
-      console.log(`Loaded ${data.items.length} playlists`)
+      console.log('Playlists API response:', data)
+      console.log(`Loaded ${data.items?.length || 0} playlists`)
       setPlaylists(data.items || [])
       setApiError(null)
     } catch (error) {
@@ -338,7 +389,7 @@ export const TrackBrowser: React.FC<TrackBrowserProps> = ({ onTrackSelect }) => 
       // Fetch audio features for these tracks
       if (trackList.length > 0) {
         const trackIds = trackList.map((track: SpotifyTrack) => track.id)
-        await fetchAudioFeatures(trackIds)
+        await fetchAudioFeatures(trackIds, trackList)
       }
     } catch (error) {
       console.error('Error fetching playlist tracks:', error)
@@ -484,13 +535,16 @@ export const TrackBrowser: React.FC<TrackBrowserProps> = ({ onTrackSelect }) => 
     return filtered
   }
 
-  // Get enriched track with BPM
+  // Get enriched track with BPM and other features
   const getEnrichedTrack = (track: SpotifyTrack) => {
     const features = audioFeaturesCache.get(track.id)
     return {
       ...track,
       bpm: features ? Math.round(features.tempo) : undefined,
-      audio_features: features
+      audio_features: features,
+      camelotKey: features ? getCamelotKey(features.key, features.mode) : undefined,
+      energy: features?.energy,
+      valence: features?.valence
     }
   }
 
@@ -632,26 +686,46 @@ export const TrackBrowser: React.FC<TrackBrowserProps> = ({ onTrackSelect }) => 
         {filterType === 'bpm' && (
           <div className="mb-2 px-2 py-1 bg-gray-700 rounded mx-2">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-xs text-gray-300">BPM</span>
-              <span className="text-xs text-gray-400">{bpmFilter.min} - {bpmFilter.max}</span>
+              <span className="text-xs text-gray-300">BPM Range</span>
+              <span className="text-xs text-gray-400 font-mono">{bpmFilter.min} - {bpmFilter.max}</span>
             </div>
-            <div className="flex gap-1">
-              <input
-                type="range"
-                min="60"
-                max="200"
-                value={bpmFilter.min}
-                onChange={(e) => setBpmFilter(prev => ({ ...prev, min: parseInt(e.target.value) }))}
-                className="flex-1"
-              />
-              <input
-                type="range"
-                min="60"
-                max="200"
-                value={bpmFilter.max}
-                onChange={(e) => setBpmFilter(prev => ({ ...prev, max: parseInt(e.target.value) }))}
-                className="flex-1"
-              />
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-400 w-8">Min:</span>
+                <input
+                  type="range"
+                  min="60"
+                  max="200"
+                  value={bpmFilter.min}
+                  onChange={(e) => {
+                    const newMin = parseInt(e.target.value)
+                    setBpmFilter(prev => ({ 
+                      min: Math.min(newMin, prev.max - 10), 
+                      max: prev.max 
+                    }))
+                  }}
+                  className="flex-1 h-1"
+                />
+                <span className="text-xs text-purple-400 font-mono w-8">{bpmFilter.min}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-400 w-8">Max:</span>
+                <input
+                  type="range"
+                  min="60"
+                  max="200"
+                  value={bpmFilter.max}
+                  onChange={(e) => {
+                    const newMax = parseInt(e.target.value)
+                    setBpmFilter(prev => ({ 
+                      min: prev.min,
+                      max: Math.max(newMax, prev.min + 10)
+                    }))
+                  }}
+                  className="flex-1 h-1"
+                />
+                <span className="text-xs text-purple-400 font-mono w-8">{bpmFilter.max}</span>
+              </div>
             </div>
           </div>
         )}
@@ -816,12 +890,53 @@ export const TrackBrowser: React.FC<TrackBrowserProps> = ({ onTrackSelect }) => 
                     </div>
                   </div>
                   
-                  {/* BPM */}
-                  {enrichedTrack.bpm && (
-                    <div className={`text-xs font-mono ${getBpmColor(enrichedTrack.bpm)} flex-shrink-0`}>
-                      {enrichedTrack.bpm}
-                    </div>
-                  )}
+                  {/* Track Features */}
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {/* Camelot Key */}
+                    {enrichedTrack.camelotKey && enrichedTrack.camelotKey !== 'Unknown' && (
+                      <div 
+                        className="text-xs font-mono px-1.5 py-0.5 rounded"
+                        style={{ 
+                          backgroundColor: getCamelotColor(enrichedTrack.camelotKey),
+                          color: '#000'
+                        }}
+                        title={getKeyName(enrichedTrack.audio_features?.key || 0, enrichedTrack.audio_features?.mode || 0)}
+                      >
+                        {enrichedTrack.camelotKey}
+                      </div>
+                    )}
+                    
+                    {/* BPM */}
+                    {enrichedTrack.bpm && (
+                      <div className={`text-xs font-mono ${getBpmColor(enrichedTrack.bpm)}`}>
+                        {enrichedTrack.bpm}
+                      </div>
+                    )}
+                    
+                    {/* Energy */}
+                    {enrichedTrack.energy !== undefined && (
+                      <div className="flex items-center gap-0.5" title={`Energy: ${Math.round(enrichedTrack.energy * 100)}%`}>
+                        <Activity className="w-3 h-3 text-orange-400" />
+                        <div className="w-8 h-1 bg-gray-600 rounded-full relative">
+                          <div 
+                            className="absolute h-full bg-orange-400 rounded-full"
+                            style={{ width: `${enrichedTrack.energy * 100}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Mood */}
+                    {enrichedTrack.valence !== undefined && (
+                      <div className="flex items-center" title={`Mood: ${Math.round(enrichedTrack.valence * 100)}%`}>
+                        <Smile className={`w-3 h-3 ${
+                          enrichedTrack.valence < 0.3 ? 'text-blue-400' :
+                          enrichedTrack.valence < 0.7 ? 'text-gray-400' :
+                          'text-yellow-400'
+                        }`} />
+                      </div>
+                    )}
+                  </div>
                   
                   {/* Duration */}
                   <div className="text-xs text-gray-400 flex-shrink-0">

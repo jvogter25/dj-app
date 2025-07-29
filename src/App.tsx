@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { PlayerProvider } from './contexts/PlayerContext'
 import { DJInterface } from './components/DJInterface'
+import { MixStudio } from './components/MixStudio'
 import { AuthCallback } from './components/AuthCallback'
 import { DebugInfo } from './components/DebugInfo'
 
@@ -63,6 +64,14 @@ function App() {
                 <PlayerProvider>
                   <DJInterface />
                 </PlayerProvider>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/mix-studio"
+            element={
+              <ProtectedRoute>
+                <MixStudio />
               </ProtectedRoute>
             }
           />
