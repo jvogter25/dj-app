@@ -218,7 +218,7 @@ export const DJInterface: React.FC = () => {
                 
                 {/* Collapsible Content */}
                 {libraryExpanded && (
-                  <div style={{ height: '400px' }}>
+                  <div style={{ height: '350px' }} className="overflow-hidden">
                     <ErrorBoundary
                       fallback={
                         <div className="p-6 h-full flex items-center justify-center">

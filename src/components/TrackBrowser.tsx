@@ -537,79 +537,79 @@ export const TrackBrowser: React.FC<TrackBrowserProps> = ({ onTrackSelect }) => 
   }
 
   return (
-    <div className="bg-gray-800 rounded-lg p-6 h-full flex flex-col">
-      <div className="mb-4">
-        <h3 className="text-lg font-semibold mb-4">Track Browser</h3>
+    <div className="h-full flex flex-col">
+      <div className="flex-shrink-0">
+        <h3 className="sr-only">Track Browser</h3>
         
         {/* View Mode Tabs */}
-        <div className="flex gap-2 mb-4">
+        <div className="flex gap-1 mb-2 px-2">
           <button
             onClick={() => { setViewMode('library'); setSelectedPlaylist(null); setSelectedArtist(null) }}
-            className={`flex items-center gap-2 px-3 py-2 rounded-lg font-medium transition-colors ${
+            className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
               viewMode === 'library' ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
             }`}
           >
-            <Music className="w-4 h-4" />
+            <Music className="w-3 h-3" />
             Liked
           </button>
           <button
             onClick={() => { setViewMode('recent'); setSelectedPlaylist(null); setSelectedArtist(null) }}
-            className={`flex items-center gap-2 px-3 py-2 rounded-lg font-medium transition-colors ${
+            className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
               viewMode === 'recent' ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
             }`}
           >
-            <History className="w-4 h-4" />
+            <History className="w-3 h-3" />
             Recent
           </button>
           <button
             onClick={() => { setViewMode('playlists'); setSelectedPlaylist(null); setSelectedArtist(null) }}
-            className={`flex items-center gap-2 px-3 py-2 rounded-lg font-medium transition-colors ${
+            className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
               viewMode === 'playlists' ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
             }`}
           >
-            <List className="w-4 h-4" />
+            <List className="w-3 h-3" />
             Playlists
           </button>
           <button
             onClick={() => { setViewMode('artists'); setSelectedPlaylist(null); setSelectedArtist(null) }}
-            className={`flex items-center gap-2 px-3 py-2 rounded-lg font-medium transition-colors ${
+            className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
               viewMode === 'artists' ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
             }`}
           >
-            <User className="w-4 h-4" />
+            <User className="w-3 h-3" />
             Artists
           </button>
           <button
             onClick={() => { setViewMode('search'); setSelectedPlaylist(null); setSelectedArtist(null) }}
-            className={`flex items-center gap-2 px-3 py-2 rounded-lg font-medium transition-colors ${
+            className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
               viewMode === 'search' ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
             }`}
           >
-            <Search className="w-4 h-4" />
+            <Search className="w-3 h-3" />
             Search
           </button>
         </div>
 
         {/* Search Bar (for search mode or filtering) */}
         {(viewMode === 'search' || viewMode === 'library' || viewMode === 'recent') && (
-          <div className="relative mb-4">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+          <div className="relative mb-2 px-2">
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <input
               type="text"
-              placeholder={viewMode === 'search' ? "Search Spotify..." : "Filter library..."}
+              placeholder={viewMode === 'search' ? "Search Spotify..." : "Filter..."}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full pl-8 pr-2 py-1 bg-gray-700 rounded text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-purple-500"
             />
           </div>
         )}
 
         {/* Filter Controls */}
         {(viewMode === 'library' || viewMode === 'search') && (
-          <div className="flex gap-2 mb-4">
+          <div className="flex gap-1 mb-2 px-2">
             <button
               onClick={() => setFilterType('all')}
-              className={`flex items-center gap-1 px-3 py-1 rounded text-sm transition-colors ${
+              className={`flex items-center gap-1 px-2 py-0.5 rounded text-xs transition-colors ${
                 filterType === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
               }`}
             >
@@ -618,7 +618,7 @@ export const TrackBrowser: React.FC<TrackBrowserProps> = ({ onTrackSelect }) => 
             </button>
             <button
               onClick={() => setFilterType('bpm')}
-              className={`flex items-center gap-1 px-3 py-1 rounded text-sm transition-colors ${
+              className={`flex items-center gap-1 px-2 py-0.5 rounded text-xs transition-colors ${
                 filterType === 'bpm' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
               }`}
             >
@@ -630,12 +630,12 @@ export const TrackBrowser: React.FC<TrackBrowserProps> = ({ onTrackSelect }) => 
 
         {/* BPM Range Filter */}
         {filterType === 'bpm' && (
-          <div className="mb-4 p-3 bg-gray-700 rounded-lg">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-gray-300">BPM Range</span>
-              <span className="text-sm text-gray-400">{bpmFilter.min} - {bpmFilter.max}</span>
+          <div className="mb-2 px-2 py-1 bg-gray-700 rounded mx-2">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs text-gray-300">BPM</span>
+              <span className="text-xs text-gray-400">{bpmFilter.min} - {bpmFilter.max}</span>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-1">
               <input
                 type="range"
                 min="60"
@@ -658,44 +658,46 @@ export const TrackBrowser: React.FC<TrackBrowserProps> = ({ onTrackSelect }) => 
 
         {/* API Error Display */}
         {apiError && (
-          <div className="mb-4 p-3 bg-red-900 border border-red-700 rounded-lg">
-            <div className="text-red-200 text-sm">{apiError}</div>
-            <button
-              onClick={async () => {
-                setApiError(null)
-                const success = await refreshSpotifyToken()
-                if (success) {
-                  // Retry the current view's fetch
-                  if (viewMode === 'library') {
-                    await fetchUserTracks()
-                  } else if (viewMode === 'recent') {
-                    await fetchRecentlyPlayed()
-                  } else if (viewMode === 'playlists') {
-                    await fetchPlaylists()
-                  } else if (viewMode === 'artists') {
-                    await fetchTopArtists()
+          <div className="mb-2 mx-2 p-2 bg-red-900 border border-red-700 rounded">
+            <div className="text-red-200 text-xs mb-1">{apiError}</div>
+            <div className="flex gap-1">
+              <button
+                onClick={async () => {
+                  setApiError(null)
+                  const success = await refreshSpotifyToken()
+                  if (success) {
+                    // Retry the current view's fetch
+                    if (viewMode === 'library') {
+                      await fetchUserTracks()
+                    } else if (viewMode === 'recent') {
+                      await fetchRecentlyPlayed()
+                    } else if (viewMode === 'playlists') {
+                      await fetchPlaylists()
+                    } else if (viewMode === 'artists') {
+                      await fetchTopArtists()
+                    }
+                  } else {
+                    setApiError('Failed to refresh token. Please sign in again.')
                   }
-                } else {
-                  setApiError('Failed to refresh token. Please sign in again.')
-                }
-              }}
-              className="mt-2 px-3 py-1 bg-red-700 hover:bg-red-600 text-white text-xs rounded disabled:opacity-50"
-              disabled={refreshing || loading}
-            >
-              {refreshing ? 'Refreshing...' : 'Refresh Token & Retry'}
-            </button>
-            <button
-              onClick={() => window.location.href = '/'}
-              className="mt-2 ml-2 px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white text-xs rounded"
-            >
-              Sign In Again
-            </button>
+                }}
+                className="px-2 py-0.5 bg-red-700 hover:bg-red-600 text-white text-xs rounded disabled:opacity-50"
+                disabled={refreshing || loading}
+              >
+                {refreshing ? 'Refreshing...' : 'Retry'}
+              </button>
+              <button
+                onClick={() => window.location.href = '/'}
+                className="px-2 py-0.5 bg-gray-700 hover:bg-gray-600 text-white text-xs rounded"
+              >
+                Sign In
+              </button>
+            </div>
           </div>
         )}
 
         {/* Manual Refresh Button */}
         {(viewMode === 'library' || viewMode === 'recent') && (
-          <div className="mb-4">
+          <div className="mb-2 px-2">
             <button
               onClick={() => {
                 if (viewMode === 'library') {
@@ -704,35 +706,35 @@ export const TrackBrowser: React.FC<TrackBrowserProps> = ({ onTrackSelect }) => 
                   fetchRecentlyPlayed()
                 }
               }}
-              className="w-full py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+              className="w-full py-1 bg-purple-600 hover:bg-purple-700 text-white rounded text-sm transition-colors"
               disabled={loading}
             >
-              {loading ? 'Loading...' : `Refresh ${viewMode === 'library' ? 'Liked Songs' : 'Recent Tracks'}`}
+              {loading ? 'Loading...' : `Refresh ${viewMode === 'library' ? 'Liked' : 'Recent'}`}
             </button>
           </div>
         )}
 
         {/* Deck Selector */}
-        <div className="flex gap-2 mb-4">
+        <div className="flex gap-1 mb-2 px-2">
           <button
             onClick={() => setSelectedDeck('A')}
-            className={`flex-1 py-2 rounded-lg font-semibold transition-colors ${
+            className={`flex-1 py-1 rounded text-sm font-medium transition-colors ${
               selectedDeck === 'A' 
                 ? 'bg-blue-600 text-white' 
                 : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
             }`}
           >
-            Load to Deck A
+            Deck A
           </button>
           <button
             onClick={() => setSelectedDeck('B')}
-            className={`flex-1 py-2 rounded-lg font-semibold transition-colors ${
+            className={`flex-1 py-1 rounded text-sm font-medium transition-colors ${
               selectedDeck === 'B' 
                 ? 'bg-green-600 text-white' 
                 : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
             }`}
           >
-            Load to Deck B
+            Deck B
           </button>
         </div>
       </div>
@@ -788,42 +790,42 @@ export const TrackBrowser: React.FC<TrackBrowserProps> = ({ onTrackSelect }) => 
           </div>
         ) : (
           /* Track List */
-          <div className="space-y-2">
+          <div className="space-y-1 px-2 py-2">
             {(selectedPlaylist || selectedArtist ? tracks : getFilteredTracks()).map((track) => {
               const enrichedTrack = getEnrichedTrack(track)
               return (
                 <div
                   key={track.id}
                   onClick={() => onTrackSelect(enrichedTrack, selectedDeck)}
-                  className="flex items-center gap-3 p-3 bg-gray-700 hover:bg-gray-600 rounded-lg cursor-pointer transition-colors"
+                  className="flex items-center gap-2 p-2 bg-gray-700 hover:bg-gray-600 rounded cursor-pointer transition-colors"
                 >
                   {/* Album Art */}
                   <img
                     src={track.album.images[2]?.url || '/placeholder-album.png'}
                     alt={track.album.name}
-                    className="w-12 h-12 rounded"
+                    className="w-10 h-10 rounded flex-shrink-0"
                   />
                   
                   {/* Track Info */}
                   <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-white truncate">
+                    <div className="font-medium text-sm text-white truncate">
                       {track.name}
                     </div>
-                    <div className="text-sm text-gray-400 truncate">
+                    <div className="text-xs text-gray-400 truncate">
                       {track.artists?.map(a => a.name).join(', ') || 'Unknown Artist'}
                     </div>
                   </div>
                   
                   {/* BPM */}
                   {enrichedTrack.bpm && (
-                    <div className={`text-sm font-mono ${getBpmColor(enrichedTrack.bpm)}`}>
-                      {enrichedTrack.bpm} BPM
+                    <div className={`text-xs font-mono ${getBpmColor(enrichedTrack.bpm)} flex-shrink-0`}>
+                      {enrichedTrack.bpm}
                     </div>
                   )}
                   
                   {/* Duration */}
-                  <div className="flex items-center gap-1 text-sm text-gray-400">
-                    <Clock className="w-4 h-4" />
+                  <div className="text-xs text-gray-400 flex-shrink-0">
+                    <Clock className="w-3 h-3 inline mr-1" />
                     {formatDuration(track.duration_ms)}
                   </div>
                 </div>
