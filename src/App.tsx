@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { DJInterface } from './components/DJInterface'
 import { AuthCallback } from './components/AuthCallback'
+import { DebugInfo } from './components/DebugInfo'
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth()
@@ -42,6 +43,7 @@ const LoginPage: React.FC = () => {
           Sign in with Spotify
         </button>
       </div>
+      <DebugInfo />
     </div>
   )
 }

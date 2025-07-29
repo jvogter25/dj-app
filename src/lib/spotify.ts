@@ -20,13 +20,14 @@ export const spotifyAuth = {
     const state = crypto.randomUUID()
     sessionStorage.setItem('spotify_auth_state', state)
     
+    // For Web Playback SDK, we need to use implicit grant with token response type
     const params = new URLSearchParams({
       client_id: SPOTIFY_CLIENT_ID,
       response_type: 'token',
       redirect_uri: REDIRECT_URI,
       scope: SCOPES,
       state: state,
-      show_dialog: 'true'
+      show_dialog: 'false'
     })
     
     return `https://accounts.spotify.com/authorize?${params.toString()}`
