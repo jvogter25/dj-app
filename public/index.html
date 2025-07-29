@@ -26,6 +26,13 @@
       Learn how to configure a non-root public URL by running `npm run build`.
     -->
     <title>DJ Studio</title>
+    <script>
+      // Define the callback before loading Spotify SDK
+      window.onSpotifyWebPlaybackSDKReady = () => {
+        console.log('Spotify Web Playback SDK is ready');
+        // React app will handle initialization
+      };
+    </script>
     <script src="https://sdk.scdn.co/spotify-player.js"></script>
   </head>
   <body>

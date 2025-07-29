@@ -123,7 +123,7 @@ export const Deck: React.FC<DeckProps> = ({
           <>
             <div className="text-white font-semibold truncate">{loadedTrack.name}</div>
             <div className="text-gray-400 text-sm truncate">
-              {loadedTrack.artists.map(a => a.name).join(', ')}
+              {loadedTrack.artists?.map(a => a.name).join(', ') || 'Unknown Artist'}
             </div>
           </>
         ) : (

@@ -175,7 +175,9 @@ export const TrackBrowser: React.FC<TrackBrowserProps> = ({ onTrackSelect }) => 
       const data = await response.json()
       console.log('Spotify tracks response:', data)
       
-      const trackList = data.items.map((item: any) => item.track).filter((track: any) => track)
+      const trackList = data.items
+        .map((item: any) => item.track)
+        .filter((track: any) => track && track.id && track.name) // Ensure tracks have required fields
       console.log(`Loaded ${trackList.length} tracks`)
       setTracks(trackList)
       
@@ -232,7 +234,9 @@ export const TrackBrowser: React.FC<TrackBrowserProps> = ({ onTrackSelect }) => 
       if (!response.ok) throw new Error('Failed to fetch playlist tracks')
       
       const data = await response.json()
-      const trackList = data.items.map((item: any) => item.track).filter((track: any) => track)
+      const trackList = data.items
+        .map((item: any) => item.track)
+        .filter((track: any) => track && track.id && track.name) // Ensure tracks have required fields
       setTracks(trackList)
       
       // Fetch audio features for these tracks
@@ -340,8 +344,8 @@ export const TrackBrowser: React.FC<TrackBrowserProps> = ({ onTrackSelect }) => 
     if (searchQuery && viewMode !== 'search') {
       const query = searchQuery.toLowerCase()
       filtered = filtered.filter(track => 
-        track.name.toLowerCase().includes(query) ||
-        track.artists.some(artist => artist.name.toLowerCase().includes(query))
+        track.name?.toLowerCase().includes(query) ||
+        track.artists?.some(artist => artist.name?.toLowerCase().includes(query)) || false
       )
     }
 
@@ -625,7 +629,7 @@ export const TrackBrowser: React.FC<TrackBrowserProps> = ({ onTrackSelect }) => 
                       {track.name}
                     </div>
                     <div className="text-sm text-gray-400 truncate">
-                      {track.artists.map(a => a.name).join(', ')}
+                      {track.artists?.map(a => a.name).join(', ') || 'Unknown Artist'}
                     </div>
                   </div>
                   
