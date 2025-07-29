@@ -38,7 +38,7 @@ export const spotifyAuth = {
       redirect_uri: REDIRECT_URI,
       scope: SCOPES,
       state: state,
-      show_dialog: 'false'
+      show_dialog: 'true'
     })
     
     return `https://accounts.spotify.com/authorize?${params.toString()}`
