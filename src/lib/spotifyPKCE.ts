@@ -163,5 +163,53 @@ export const spotifyAuthPKCE = {
   async getStoredToken() {
     const { data: { user } } = await supabase.auth.getUser()
     return user?.user_metadata?.spotify_access_token
+  },
+
+  async refreshAccessToken(): Promise<string | null> {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return null
+    
+    const refreshToken = user.user_metadata?.spotify_refresh_token
+    if (!refreshToken) {
+      console.error('No refresh token available')
+      return null
+    }
+
+    try {
+      const response = await fetch('https://accounts.spotify.com/api/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          grant_type: 'refresh_token',
+          refresh_token: refreshToken,
+          client_id: SPOTIFY_CLIENT_ID,
+        }),
+      })
+
+      if (!response.ok) {
+        console.error('Failed to refresh token:', await response.text())
+        return null
+      }
+
+      const data = await response.json()
+      const newAccessToken = data.access_token
+
+      // Update stored token
+      await supabase.auth.updateUser({
+        data: {
+          spotify_access_token: newAccessToken,
+          // Update refresh token if a new one is provided
+          ...(data.refresh_token && { spotify_refresh_token: data.refresh_token })
+        }
+      })
+
+      console.log('Spotify token refreshed successfully')
+      return newAccessToken
+    } catch (error) {
+      console.error('Error refreshing token:', error)
+      return null
+    }
   }
 }

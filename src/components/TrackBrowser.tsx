@@ -45,7 +45,7 @@ interface TrackBrowserProps {
 }
 
 export const TrackBrowser: React.FC<TrackBrowserProps> = ({ onTrackSelect }) => {
-  const { spotifyToken } = useAuth()
+  const { spotifyToken, refreshSpotifyToken } = useAuth()
   const [tracks, setTracks] = useState<SpotifyTrack[]>([])
   const [playlists, setPlaylists] = useState<SpotifyPlaylist[]>([])
   const [artists, setArtists] = useState<SpotifyArtist[]>([])
@@ -510,10 +510,14 @@ export const TrackBrowser: React.FC<TrackBrowserProps> = ({ onTrackSelect }) => 
           <div className="mb-4 p-3 bg-red-900 border border-red-700 rounded-lg">
             <div className="text-red-200 text-sm">{apiError}</div>
             <button
-              onClick={testSpotifyAPI}
+              onClick={async () => {
+                await refreshSpotifyToken()
+                // Re-test API after refreshing token
+                setTimeout(testSpotifyAPI, 500)
+              }}
               className="mt-2 px-3 py-1 bg-red-700 hover:bg-red-600 text-white text-xs rounded"
             >
-              Retry Connection
+              Refresh Token & Retry
             </button>
           </div>
         )}

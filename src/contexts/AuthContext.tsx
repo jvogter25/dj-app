@@ -9,6 +9,7 @@ interface AuthContextType {
   loading: boolean
   signInWithSpotify: () => void
   signOut: () => Promise<void>
+  refreshSpotifyToken: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -64,13 +65,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setSpotifyToken(null)
   }
 
+  const refreshSpotifyToken = async () => {
+    console.log('Refreshing Spotify token...')
+    const newToken = await spotifyAuthPKCE.refreshAccessToken()
+    if (newToken) {
+      setSpotifyToken(newToken)
+      console.log('Token refreshed successfully')
+    } else {
+      console.error('Failed to refresh token - re-authentication required')
+      // Force re-authentication
+      signInWithSpotify()
+    }
+  }
+
   return (
     <AuthContext.Provider value={{
       user,
       spotifyToken,
       loading,
       signInWithSpotify,
-      signOut
+      signOut,
+      refreshSpotifyToken
     }}>
       {children}
     </AuthContext.Provider>
