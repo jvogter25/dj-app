@@ -559,7 +559,8 @@ export const TrackBrowser: React.FC<TrackBrowserProps> = ({ onTrackSelect }) => 
       audio_features: features,
       camelotKey: features ? getCamelotKey(features.key, features.mode) : undefined,
       energy: features?.energy,
-      valence: features?.valence
+      valence: features?.valence,
+      source: 'spotify' as const
     }
   }
 
@@ -918,8 +919,13 @@ export const TrackBrowser: React.FC<TrackBrowserProps> = ({ onTrackSelect }) => 
                     <div className="font-medium text-sm text-white truncate">
                       {track.name}
                     </div>
-                    <div className="text-xs text-gray-400 truncate">
-                      {track.artists?.map(a => a.name).join(', ') || 'Unknown Artist'}
+                    <div className="text-xs text-gray-400 truncate flex items-center gap-1">
+                      <span className="flex items-center gap-0.5">
+                        <Music className="w-3 h-3 text-green-500" />
+                        <span className="text-green-500 text-[10px]">Spotify</span>
+                      </span>
+                      <span>•</span>
+                      <span className="truncate">{track.artists?.map(a => a.name).join(', ') || 'Unknown Artist'}</span>
                     </div>
                   </div>
                   

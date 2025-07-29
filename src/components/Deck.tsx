@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Play, Pause, RotateCcw, Zap } from 'lucide-react'
+import { Play, Pause, RotateCcw, Zap, Music, Cloud } from 'lucide-react'
 import { useGestureControls, useJogWheel } from '../hooks/useGestureControls'
 import { WaveformDisplay } from './WaveformDisplay'
 import { waveformGenerator, WaveformData } from '../lib/waveformGenerator'
@@ -22,6 +22,8 @@ interface DeckProps {
     isEnhanced?: boolean
     preview_url?: string
     spotify_id?: string
+    source?: 'spotify' | 'soundcloud'
+    uri?: string
   }
   playerState?: {
     position: number
@@ -228,11 +230,29 @@ export const Deck: React.FC<DeckProps> = ({
             <div className="text-gray-400 text-sm truncate">
               {loadedTrack.artists?.map(a => a.name).join(', ') || 'Unknown Artist'}
             </div>
-            {loadedTrack.bpm && (
-              <div className="text-xs text-gray-500 mt-1">
-                BPM: <span className="text-purple-400 font-mono">{loadedTrack.bpm}</span>
-              </div>
-            )}
+            <div className="flex items-center gap-2 mt-1">
+              {loadedTrack.bpm && (
+                <div className="text-xs text-gray-500">
+                  BPM: <span className="text-purple-400 font-mono">{loadedTrack.bpm}</span>
+                </div>
+              )}
+              {/* Source indicator */}
+              {(loadedTrack.source || (loadedTrack.uri && loadedTrack.uri.includes('spotify'))) && (
+                <div className="flex items-center gap-0.5">
+                  {loadedTrack.source === 'soundcloud' || loadedTrack.uri?.includes('soundcloud') ? (
+                    <>
+                      <Cloud className="w-3 h-3 text-orange-500" />
+                      <span className="text-orange-500 text-[10px]">SoundCloud</span>
+                    </>
+                  ) : (
+                    <>
+                      <Music className="w-3 h-3 text-green-500" />
+                      <span className="text-green-500 text-[10px]">Spotify</span>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
           </>
         ) : (
           <>

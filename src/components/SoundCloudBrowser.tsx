@@ -286,7 +286,14 @@ export const SoundCloudBrowser: React.FC<SoundCloudBrowserProps> = ({ onTrackSel
                   )}
                   <div className="flex-1 min-w-0">
                     <div className="font-medium truncate">{track.title}</div>
-                    <div className="text-sm text-gray-400 truncate">{track.user.username}</div>
+                    <div className="text-sm text-gray-400 truncate flex items-center gap-1">
+                      <span className="flex items-center gap-0.5">
+                        <Cloud className="w-3 h-3 text-orange-500" />
+                        <span className="text-orange-500 text-[10px]">SoundCloud</span>
+                      </span>
+                      <span>•</span>
+                      <span className="truncate">{track.user.username}</span>
+                    </div>
                   </div>
                   <div className="text-right text-sm">
                     <div className="text-gray-400">{formatDuration(track.duration)}</div>
