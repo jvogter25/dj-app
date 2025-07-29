@@ -1,7 +1,8 @@
 import { supabase } from './supabase'
 
 const SPOTIFY_CLIENT_ID = process.env.REACT_APP_SPOTIFY_CLIENT_ID!
-const REDIRECT_URI = `${window.location.origin}/auth/callback`
+// Use a fixed redirect URI to ensure consistency
+const REDIRECT_URI = 'https://dj-app-kappa.vercel.app/auth/callback'
 const SCOPES = [
   'user-read-private',
   'user-read-email',
@@ -17,8 +18,18 @@ const SCOPES = [
 
 export const spotifyAuth = {
   getAuthUrl: () => {
+    // Clear any existing state first
+    sessionStorage.removeItem('spotify_auth_state')
+    
     const state = crypto.randomUUID()
     sessionStorage.setItem('spotify_auth_state', state)
+    
+    // Debug logging
+    console.log('Spotify auth URL generation:', {
+      clientId: SPOTIFY_CLIENT_ID,
+      redirectUri: REDIRECT_URI,
+      state: state
+    })
     
     // For Web Playback SDK, we need to use implicit grant with token response type
     const params = new URLSearchParams({

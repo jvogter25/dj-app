@@ -38,12 +38,23 @@ export const AuthCallback: React.FC = () => {
         <div className="text-center">
           <h2 className="text-2xl font-bold mb-4">Authentication Error</h2>
           <p className="text-red-400 mb-4">{error}</p>
-          <button
-            onClick={() => navigate('/')}
-            className="px-4 py-2 bg-green-500 hover:bg-green-600 rounded-lg"
-          >
-            Back to Home
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => {
+                sessionStorage.clear()
+                navigate('/')
+              }}
+              className="px-4 py-2 bg-green-500 hover:bg-green-600 rounded-lg"
+            >
+              Try Again
+            </button>
+            <button
+              onClick={() => navigate('/')}
+              className="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded-lg"
+            >
+              Back to Home
+            </button>
+          </div>
         </div>
       </div>
     )
