@@ -12,6 +12,7 @@ import { EffectsPanel, EffectSettings } from './EffectsPanel'
 import { SetupWizard } from './SetupWizard'
 import { SmartQueue } from './SmartQueue'
 import { MixRecorder } from './MixRecorder'
+import { NotificationSettings } from './NotificationSettings'
 import ErrorBoundary from './ErrorBoundary'
 import { Library, Settings, Radio, X, ChevronUp, ChevronDown, HelpCircle, Music, Cloud, Layers } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
@@ -37,6 +38,7 @@ export const DJInterface: React.FC = () => {
   const [showLibrary, setShowLibrary] = useState(true)
   const [libraryExpanded, setLibraryExpanded] = useState(true)
   const [showSettings, setShowSettings] = useState(false)
+  const [settingsTab, setSettingsTab] = useState<'playback' | 'notifications'>('playback')
   const [showSetupWizard, setShowSetupWizard] = useState(false)
   const [loadedTracks, setLoadedTracks] = useState<{ A?: any, B?: any }>({})
   const [trackSource, setTrackSource] = useState<'spotify' | 'soundcloud'>('spotify')
@@ -122,23 +124,23 @@ export const DJInterface: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-900 text-white">
       {/* Header */}
-      <header className="bg-gray-800 border-b border-gray-700 px-6 py-4">
+      <header className="bg-gray-800 border-b border-gray-700 px-4 sm:px-6 py-3 sm:py-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Radio className="w-6 h-6 text-purple-500" />
-              DJ Studio
+          <div className="flex items-center gap-2 sm:gap-4">
+            <h1 className="text-lg sm:text-2xl font-bold flex items-center gap-2">
+              <Radio className="w-5 h-5 sm:w-6 sm:h-6 text-purple-500" />
+              <span className="hidden sm:inline">DJ Studio</span>
             </h1>
             <button
               onClick={() => navigate('/mix-studio')}
-              className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors flex items-center gap-2 text-sm"
+              className="px-2 sm:px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors flex items-center gap-1 sm:gap-2 text-xs sm:text-sm"
               title="Switch to Mix Studio"
             >
               <Layers className="w-4 h-4" />
-              Mix Studio
+              <span className="hidden sm:inline">Mix Studio</span>
             </button>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
             <button 
               onClick={() => setShowLibrary(!showLibrary)}
               className={`p-2 rounded-lg transition-colors ${
@@ -146,14 +148,14 @@ export const DJInterface: React.FC = () => {
               }`}
               title="Toggle Library"
             >
-              <Library className="w-5 h-5" />
+              <Library className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
             <button 
               onClick={() => setShowSetupWizard(true)}
               className="p-2 rounded-lg hover:bg-gray-700 transition-colors"
               title="Help"
             >
-              <HelpCircle className="w-5 h-5" />
+              <HelpCircle className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
             <button 
               onClick={() => setShowSettings(!showSettings)}
@@ -162,19 +164,19 @@ export const DJInterface: React.FC = () => {
               }`}
               title="Settings"
             >
-              <Settings className="w-5 h-5" />
+              <Settings className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
           </div>
         </div>
       </header>
 
       {/* Main Interface */}
-      <main className="p-6">
+      <main className="p-2 sm:p-4 lg:p-6">
         <div className="max-w-7xl mx-auto">
           {/* Top Section - Decks and Mixer */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-3 sm:gap-4 lg:gap-6 mb-4 sm:mb-6">
             {/* Left Column - Deck A + Effects */}
-            <div className="space-y-4">
+            <div className="space-y-2 sm:space-y-4">
               <Deck
                 deckId="A"
                 isPlaying={deckA.playerState.isPlaying}
@@ -211,7 +213,7 @@ export const DJInterface: React.FC = () => {
             </div>
 
             {/* Center Column - Mixer + Smart Transition */}
-            <div className="space-y-4">
+            <div className="space-y-2 sm:space-y-4">
               <Mixer
                 crossfaderPosition={crossfaderPosition}
                 onCrossfaderChange={setCrossfaderPosition}
@@ -238,7 +240,7 @@ export const DJInterface: React.FC = () => {
             </div>
 
             {/* Right Column - Deck B + Effects */}
-            <div className="space-y-4">
+            <div className="space-y-2 sm:space-y-4">
               <Deck
                 deckId="B"
                 isPlaying={deckB.playerState.isPlaying}
@@ -277,7 +279,7 @@ export const DJInterface: React.FC = () => {
 
           {/* Bottom Section - Track Browser & Smart Queue */}
           {showLibrary && (
-            <div className="mt-6 space-y-4">
+            <div className="mt-4 sm:mt-6 space-y-3 sm:space-y-4">
               {/* Smart Queue */}
               {loadedTracks.A && (
                 <SmartQueue
@@ -293,16 +295,17 @@ export const DJInterface: React.FC = () => {
                 <div className="border-b border-gray-700">
                   <button
                     onClick={() => setLibraryExpanded(!libraryExpanded)}
-                    className="w-full px-6 py-3 flex items-center justify-between hover:bg-gray-700 transition-colors"
+                    className="w-full px-3 sm:px-6 py-3 flex items-center justify-between hover:bg-gray-700 transition-colors"
                   >
-                    <h3 className="text-lg font-semibold flex items-center gap-2">
-                      <Library className="w-5 h-5 text-purple-500" />
-                      Track Browser
+                    <h3 className="text-base sm:text-lg font-semibold flex items-center gap-2">
+                      <Library className="w-4 h-4 sm:w-5 sm:h-5 text-purple-500" />
+                      <span className="hidden sm:inline">Track Browser</span>
+                      <span className="sm:hidden">Browser</span>
                     </h3>
                     {libraryExpanded ? (
-                      <ChevronDown className="w-5 h-5 text-gray-400" />
+                      <ChevronDown className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
                     ) : (
-                      <ChevronUp className="w-5 h-5 text-gray-400" />
+                      <ChevronUp className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
                     )}
                   </button>
                   
@@ -311,25 +314,25 @@ export const DJInterface: React.FC = () => {
                     <div className="flex border-t border-gray-700">
                       <button
                         onClick={() => setTrackSource('spotify')}
-                        className={`flex-1 px-4 py-2 flex items-center justify-center gap-2 transition-colors ${
+                        className={`flex-1 px-2 sm:px-4 py-2 flex items-center justify-center gap-1 sm:gap-2 transition-colors ${
                           trackSource === 'spotify' 
                             ? 'bg-green-600 text-white' 
                             : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
                         }`}
                       >
-                        <Music className="w-4 h-4" />
-                        Spotify
+                        <Music className="w-3 h-3 sm:w-4 sm:h-4" />
+                        <span className="text-xs sm:text-sm">Spotify</span>
                       </button>
                       <button
                         onClick={() => setTrackSource('soundcloud')}
-                        className={`flex-1 px-4 py-2 flex items-center justify-center gap-2 transition-colors ${
+                        className={`flex-1 px-2 sm:px-4 py-2 flex items-center justify-center gap-1 sm:gap-2 transition-colors ${
                           trackSource === 'soundcloud' 
                             ? 'bg-orange-600 text-white' 
                             : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
                         }`}
                       >
-                        <Cloud className="w-4 h-4" />
-                        SoundCloud
+                        <Cloud className="w-3 h-3 sm:w-4 sm:h-4" />
+                        <span className="text-xs sm:text-sm">SoundCloud</span>
                       </button>
                     </div>
                   )}
@@ -337,7 +340,7 @@ export const DJInterface: React.FC = () => {
                 
                 {/* Collapsible Content */}
                 {libraryExpanded && (
-                  <div style={{ height: '350px' }} className="overflow-hidden">
+                  <div style={{ height: '300px' }} className="sm:h-[350px] overflow-hidden">
                     <ErrorBoundary
                       fallback={
                         <div className="p-6 h-full flex items-center justify-center">
@@ -371,9 +374,9 @@ export const DJInterface: React.FC = () => {
 
           {/* Settings Panel */}
           {showSettings && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-              <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full">
-                <div className="flex justify-between items-center mb-4">
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <div className="bg-gray-800 rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                <div className="flex justify-between items-center mb-6">
                   <h2 className="text-xl font-bold">Settings</h2>
                   <button
                     onClick={() => setShowSettings(false)}
@@ -382,7 +385,33 @@ export const DJInterface: React.FC = () => {
                     <X className="w-5 h-5" />
                   </button>
                 </div>
-                <div className="space-y-4">
+
+                {/* Settings Tabs */}
+                <div className="flex border-b border-gray-700 mb-6">
+                  <button
+                    onClick={() => setSettingsTab('playback')}
+                    className={`px-4 py-2 font-medium text-sm transition-colors ${
+                      settingsTab === 'playback'
+                        ? 'text-purple-400 border-b-2 border-purple-400'
+                        : 'text-gray-400 hover:text-white'
+                    }`}
+                  >
+                    Playback
+                  </button>
+                  <button
+                    onClick={() => setSettingsTab('notifications')}
+                    className={`px-4 py-2 font-medium text-sm transition-colors ${
+                      settingsTab === 'notifications'
+                        ? 'text-purple-400 border-b-2 border-purple-400'
+                        : 'text-gray-400 hover:text-white'
+                    }`}
+                  >
+                    Notifications
+                  </button>
+                </div>
+
+                <div className="space-y-4">{settingsTab === 'playback' && (
+                  <div className="space-y-4">
                   {/* Playback Status */}
                   <div className="bg-gray-700 rounded-lg p-4">
                     <h3 className="font-semibold mb-2 flex items-center gap-2">
@@ -433,6 +462,12 @@ export const DJInterface: React.FC = () => {
                   >
                     Sign Out
                   </button>
+                  </div>
+                )}
+
+                {settingsTab === 'notifications' && (
+                  <NotificationSettings />
+                )}
                 </div>
               </div>
             </div>

@@ -10,6 +10,8 @@ import { EnhancedTimeline } from './MixStudio/EnhancedTimeline'
 import { AudioSourceBrowser } from './MixStudio/AudioSourceBrowser'
 import { MixProjectManager } from './MixStudio/MixProjectManager'
 import { ExportDialog } from './MixStudio/ExportDialog'
+import { StemSeparation } from './StemSeparation'
+import { DuplicateDetector } from './DuplicateDetector'
 import { MixProject, AudioClip } from '../types/mixStudio'
 import { mixProjectDB } from '../lib/mixProjectDatabase'
 import { mixStudioAudioEngine } from '../lib/mixStudioAudioEngine'
@@ -38,6 +40,8 @@ export const MixStudio: React.FC = () => {
   const [showSourceBrowser, setShowSourceBrowser] = useState(true)
   const [showProjectManager, setShowProjectManager] = useState(false)
   const [showExportDialog, setShowExportDialog] = useState(false)
+  const [showStemSeparation, setShowStemSeparation] = useState(false)
+  const [showDuplicateDetector, setShowDuplicateDetector] = useState(false)
   const [zoom, setZoom] = useState(1)
   const [savedStatus, setSavedStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved')
   const animationFrameRef = useRef<number | null>(null)
@@ -228,24 +232,24 @@ export const MixStudio: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-900 text-white flex flex-col">
       {/* Header */}
-      <header className="bg-gray-800 border-b border-gray-700 px-4 py-2">
+      <header className="bg-gray-800 border-b border-gray-700 px-2 sm:px-4 py-2">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             <button
               onClick={() => navigate('/')}
-              className="flex items-center gap-2 hover:text-purple-400 transition-colors"
+              className="flex items-center gap-1 sm:gap-2 hover:text-purple-400 transition-colors"
             >
-              <Radio className="w-5 h-5" />
-              <span className="font-semibold">DJ Mode</span>
+              <Radio className="w-4 h-4 sm:w-5 sm:h-5" />
+              <span className="text-sm sm:text-base font-semibold hidden sm:inline">DJ Mode</span>
             </button>
-            <div className="text-gray-500">|</div>
-            <div className="flex items-center gap-2 text-purple-400">
-              <Layers className="w-5 h-5" />
-              <span className="font-semibold">Mix Studio</span>
+            <div className="text-gray-500 hidden sm:inline">|</div>
+            <div className="flex items-center gap-1 sm:gap-2 text-purple-400">
+              <Layers className="w-4 h-4 sm:w-5 sm:h-5" />
+              <span className="text-sm sm:text-base font-semibold">Mix Studio</span>
             </div>
           </div>
           
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             {/* Project Name */}
             <input
               type="text"
@@ -254,12 +258,12 @@ export const MixStudio: React.FC = () => {
                 setProject(prev => ({ ...prev, name: e.target.value }))
                 setSavedStatus('unsaved')
               }}
-              className="px-3 py-1 bg-gray-700 rounded text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="px-2 sm:px-3 py-1 bg-gray-700 rounded text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 w-24 sm:w-auto"
               placeholder="Project Name"
             />
             
             {/* Save Status */}
-            <div className="flex items-center gap-1 text-xs">
+            <div className="hidden sm:flex items-center gap-1 text-xs">
               {savedStatus === 'saved' && (
                 <span className="text-green-400">✓ Saved</span>
               )}
@@ -271,34 +275,48 @@ export const MixStudio: React.FC = () => {
               )}
             </div>
             
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2">
               <button
                 onClick={handleNewProject}
-                className="p-2 hover:bg-gray-700 rounded transition-colors"
+                className="p-1 sm:p-2 hover:bg-gray-700 rounded transition-colors"
                 title="New Project"
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
               </button>
               <button
                 onClick={() => setShowProjectManager(true)}
-                className="p-2 hover:bg-gray-700 rounded transition-colors"
+                className="p-1 sm:p-2 hover:bg-gray-700 rounded transition-colors"
                 title="Open Project"
               >
-                <FolderOpen className="w-4 h-4" />
+                <FolderOpen className="w-3 h-3 sm:w-4 sm:h-4" />
+              </button>
+              <button
+                onClick={() => setShowStemSeparation(true)}
+                className="p-1 sm:p-2 hover:bg-gray-700 rounded transition-colors"
+                title="Stem Separation"
+              >
+                <Scissors className="w-3 h-3 sm:w-4 sm:h-4" />
+              </button>
+              <button
+                onClick={() => setShowDuplicateDetector(true)}
+                className="p-1 sm:p-2 hover:bg-gray-700 rounded transition-colors"
+                title="Duplicate Detection"
+              >
+                <Copy className="w-3 h-3 sm:w-4 sm:h-4" />
               </button>
               <button
                 onClick={handleSaveProject}
-                className="p-2 hover:bg-gray-700 rounded transition-colors"
+                className="p-1 sm:p-2 hover:bg-gray-700 rounded transition-colors"
                 title="Save Project"
               >
-                <Save className="w-4 h-4" />
+                <Save className="w-3 h-3 sm:w-4 sm:h-4" />
               </button>
               <button
                 onClick={() => setShowExportDialog(true)}
-                className="p-2 hover:bg-gray-700 rounded transition-colors"
+                className="p-1 sm:p-2 hover:bg-gray-700 rounded transition-colors"
                 title="Export Mix"
               >
-                <Download className="w-4 h-4" />
+                <Download className="w-3 h-3 sm:w-4 sm:h-4" />
               </button>
             </div>
           </div>
@@ -306,36 +324,36 @@ export const MixStudio: React.FC = () => {
       </header>
       
       {/* Transport Bar */}
-      <div className="bg-gray-800 border-b border-gray-700 px-4 py-2">
+      <div className="bg-gray-800 border-b border-gray-700 px-2 sm:px-4 py-2">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
             <button
               onClick={handleRewind}
-              className="p-2 bg-gray-700 hover:bg-gray-600 rounded transition-colors"
+              className="p-1 sm:p-2 bg-gray-700 hover:bg-gray-600 rounded transition-colors"
             >
-              <SkipBack className="w-4 h-4" />
+              <SkipBack className="w-3 h-3 sm:w-4 sm:h-4" />
             </button>
             <button
               onClick={handlePlayPause}
-              className="p-3 bg-purple-600 hover:bg-purple-700 rounded transition-colors"
+              className="p-2 sm:p-3 bg-purple-600 hover:bg-purple-700 rounded transition-colors"
             >
-              {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+              {isPlaying ? <Pause className="w-4 h-4 sm:w-5 sm:h-5" /> : <Play className="w-4 h-4 sm:w-5 sm:h-5" />}
             </button>
             
-            <div className="ml-4 flex items-center gap-2">
-              <Clock className="w-4 h-4 text-gray-400" />
-              <span className="font-mono text-sm">
+            <div className="ml-2 sm:ml-4 flex items-center gap-1 sm:gap-2">
+              <Clock className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400" />
+              <span className="font-mono text-xs sm:text-sm">
                 {formatTime(currentTime)} / {formatTime(project.duration)}
               </span>
             </div>
             
-            <div className="ml-4 flex items-center gap-2">
-              <span className="text-sm text-gray-400">BPM:</span>
+            <div className="ml-2 sm:ml-4 flex items-center gap-1 sm:gap-2">
+              <span className="text-xs sm:text-sm text-gray-400">BPM:</span>
               <input
                 type="number"
                 value={project.bpm}
                 onChange={(e) => setProject(prev => ({ ...prev, bpm: parseInt(e.target.value) || 120 }))}
-                className="w-16 px-2 py-1 bg-gray-700 rounded text-sm"
+                className="w-12 sm:w-16 px-1 sm:px-2 py-1 bg-gray-700 rounded text-xs sm:text-sm"
                 min="60"
                 max="200"
               />
@@ -343,43 +361,43 @@ export const MixStudio: React.FC = () => {
           </div>
           
           {/* Tools */}
-          <div className="flex items-center gap-1">
+          <div className="hidden sm:flex items-center gap-1">
             <button
               onClick={() => setSelectedTool('select')}
-              className={`p-2 rounded transition-colors ${
+              className={`p-1 sm:p-2 rounded transition-colors ${
                 selectedTool === 'select' ? 'bg-purple-600' : 'hover:bg-gray-700'
               }`}
               title="Select Tool"
             >
-              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <svg className="w-3 h-3 sm:w-4 sm:h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                 <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z" />
               </svg>
             </button>
             <button
               onClick={() => setSelectedTool('split')}
-              className={`p-2 rounded transition-colors ${
+              className={`p-1 sm:p-2 rounded transition-colors ${
                 selectedTool === 'split' ? 'bg-purple-600' : 'hover:bg-gray-700'
               }`}
               title="Split Tool"
             >
-              <Scissors className="w-4 h-4" />
+              <Scissors className="w-3 h-3 sm:w-4 sm:h-4" />
             </button>
             <button
               onClick={() => setSelectedTool('fade')}
-              className={`p-2 rounded transition-colors ${
+              className={`p-1 sm:p-2 rounded transition-colors ${
                 selectedTool === 'fade' ? 'bg-purple-600' : 'hover:bg-gray-700'
               }`}
               title="Fade Tool"
             >
-              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+              <svg className="w-3 h-3 sm:w-4 sm:h-4" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M3 17h18v2H3zm0-7h3v7H3zm5 0h3v7H8zm5 0h3v7h-3zm5 0h3v7h-3z" opacity="0.5" />
               </svg>
             </button>
           </div>
           
           {/* Zoom */}
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-400">Zoom:</span>
+          <div className="flex items-center gap-1 sm:gap-2">
+            <span className="text-xs sm:text-sm text-gray-400 hidden sm:inline">Zoom:</span>
             <input
               type="range"
               min="0.5"
@@ -387,7 +405,7 @@ export const MixStudio: React.FC = () => {
               step="0.1"
               value={zoom}
               onChange={(e) => setZoom(parseFloat(e.target.value))}
-              className="w-24"
+              className="w-16 sm:w-24"
             />
           </div>
         </div>
@@ -396,7 +414,17 @@ export const MixStudio: React.FC = () => {
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
         {/* Timeline */}
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col relative">
+          {/* Mobile Source Browser Toggle */}
+          {!showSourceBrowser && (
+            <button
+              onClick={() => setShowSourceBrowser(true)}
+              className="sm:hidden absolute top-2 right-2 z-10 p-2 bg-purple-600 hover:bg-purple-700 rounded-lg shadow-lg"
+              title="Show Audio Sources"
+            >
+              <Menu className="w-4 h-4" />
+            </button>
+          )}
           <EnhancedTimeline
             project={project}
             currentTime={currentTime}
@@ -425,18 +453,23 @@ export const MixStudio: React.FC = () => {
         
         {/* Source Browser */}
         {showSourceBrowser && (
-          <div className="w-80 bg-gray-800 border-l border-gray-700 flex flex-col">
-            <div className="p-3 border-b border-gray-700 flex items-center justify-between">
-              <h3 className="font-semibold flex items-center gap-2">
-                <Menu className="w-4 h-4" />
-                Audio Sources
+          <div className={`${
+            showSourceBrowser ? 'w-full sm:w-80' : 'w-0'
+          } bg-gray-800 border-l border-gray-700 flex flex-col ${
+            showSourceBrowser ? 'fixed sm:relative inset-0 sm:inset-auto z-50 sm:z-auto' : ''
+          }`}>
+            <div className="p-2 sm:p-3 border-b border-gray-700 flex items-center justify-between">
+              <h3 className="text-sm sm:text-base font-semibold flex items-center gap-2">
+                <Menu className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">Audio Sources</span>
+                <span className="sm:hidden">Sources</span>
               </h3>
               <button
                 onClick={() => setShowSourceBrowser(false)}
                 className="p-1 hover:bg-gray-700 rounded"
                 title="Hide Panel"
               >
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <svg className="w-3 h-3 sm:w-4 sm:h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                   <path d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
@@ -493,6 +526,57 @@ export const MixStudio: React.FC = () => {
           onExport={handleExport}
           onClose={() => setShowExportDialog(false)}
         />
+      )}
+
+      {/* Stem Separation Dialog */}
+      {showStemSeparation && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 rounded-lg p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold">Stem Separation</h2>
+              <button
+                onClick={() => setShowStemSeparation(false)}
+                className="p-2 hover:bg-gray-700 rounded transition-colors"
+              >
+                ×
+              </button>
+            </div>
+            
+            <StemSeparation
+              trackId={crypto.randomUUID()} // Generate unique ID for each separation
+              trackName="Mix Studio Track"
+              onStemsGenerated={(stems) => {
+                console.log('Generated stems:', stems)
+                // TODO: Add stems to project timeline
+                setShowStemSeparation(false)
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Duplicate Detection Dialog */}
+      {showDuplicateDetector && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 rounded-lg p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold">Duplicate Detection</h2>
+              <button
+                onClick={() => setShowDuplicateDetector(false)}
+                className="p-2 hover:bg-gray-700 rounded transition-colors"
+              >
+                ×
+              </button>
+            </div>
+            
+            <DuplicateDetector
+              onDuplicatesFound={(duplicates) => {
+                console.log('Found duplicates:', duplicates)
+                // TODO: Handle duplicate detection results
+              }}
+            />
+          </div>
+        </div>
       )}
     </div>
   )

@@ -151,36 +151,36 @@ export const Deck: React.FC<DeckProps> = ({
   }
   
   return (
-    <div className={`bg-gray-800 rounded-lg p-6 border-2 border-${deckColor}-500`}>
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className={`text-2xl font-bold text-${deckColor}-400`}>Deck {deckId}</h2>
-        <div className={`w-3 h-3 rounded-full ${playerState?.isReady ? 'bg-green-500' : 'bg-red-500'}`} 
+    <div className={`bg-gray-800 rounded-lg p-3 sm:p-6 border-2 border-${deckColor}-500`}>
+      <div className="mb-3 sm:mb-4 flex items-center justify-between">
+        <h2 className={`text-lg sm:text-2xl font-bold text-${deckColor}-400`}>Deck {deckId}</h2>
+        <div className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full ${playerState?.isReady ? 'bg-green-500' : 'bg-red-500'}`} 
              title={playerState?.isReady ? 'Player Ready' : 'Player Not Ready'} />
       </div>
       
       {/* Jog Wheel */}
-      <div className="flex justify-center mb-4">
+      <div className="flex justify-center mb-3 sm:mb-4">
         <div 
-          className={`w-32 h-32 bg-gray-900 rounded-full border-4 border-${deckColor}-500 relative cursor-pointer touch-none select-none`}
+          className={`w-24 h-24 sm:w-32 sm:h-32 bg-gray-900 rounded-full border-2 sm:border-4 border-${deckColor}-500 relative cursor-pointer touch-none select-none`}
           {...jogWheelGestures()}
         >
-          <div className="absolute inset-2 bg-gray-800 rounded-full flex items-center justify-center">
-            <div className={`w-1 h-8 bg-${deckColor}-400 rounded`} style={{ transform: `rotate(${(playerState?.position || 0) / 1000}rad)` }} />
+          <div className="absolute inset-1 sm:inset-2 bg-gray-800 rounded-full flex items-center justify-center">
+            <div className={`w-0.5 h-6 sm:w-1 sm:h-8 bg-${deckColor}-400 rounded`} style={{ transform: `rotate(${(playerState?.position || 0) / 1000}rad)` }} />
           </div>
           <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-xs text-gray-400 font-mono">JOG</span>
+            <span className="text-[10px] sm:text-xs text-gray-400 font-mono">JOG</span>
           </div>
         </div>
       </div>
 
       {/* Waveform Display */}
-      <div className="mb-4 relative">
+      <div className="mb-3 sm:mb-4 relative">
         {loadedTrack ? (
           <>
             <WaveformDisplay
               waveformData={waveformLoading ? null : waveformData}
               progress={progress / 100}
-              height={96}
+              height={64}
               color={deckColor === 'blue' ? '#3B82F6' : '#10B981'}
               progressColor={deckColor === 'blue' ? '#60A5FA' : '#34D399'}
               onSeek={(progress) => {
@@ -188,20 +188,20 @@ export const Deck: React.FC<DeckProps> = ({
                   onSeek(progress * playerState.duration)
                 }
               }}
-              className="mb-2"
+              className="mb-2 sm:h-24"
             />
             
             {/* Time display overlay */}
-            <div className="absolute bottom-1 left-2 text-xs text-white font-mono bg-black bg-opacity-50 px-1 rounded">
+            <div className="absolute bottom-1 left-1 sm:left-2 text-[10px] sm:text-xs text-white font-mono bg-black bg-opacity-50 px-1 rounded">
               {playerState ? formatTime(playerState.position) : '0:00'}
             </div>
-            <div className="absolute bottom-1 right-2 text-xs text-white font-mono bg-black bg-opacity-50 px-1 rounded">
+            <div className="absolute bottom-1 right-1 sm:right-2 text-[10px] sm:text-xs text-white font-mono bg-black bg-opacity-50 px-1 rounded">
               {playerState ? formatTime(playerState.duration) : '0:00'}
             </div>
             
             {/* Status indicator */}
             {!playerState?.isReady && (
-              <div className="absolute top-2 left-2 text-xs text-yellow-400 bg-black bg-opacity-75 rounded px-2 py-1">
+              <div className="absolute top-1 sm:top-2 left-1 sm:left-2 text-[10px] sm:text-xs text-yellow-400 bg-black bg-opacity-75 rounded px-1 sm:px-2 py-1">
                 Activating Spotify device...
               </div>
             )}
@@ -209,15 +209,15 @@ export const Deck: React.FC<DeckProps> = ({
             {/* No waveform indicator */}
             {!waveformLoading && !waveformData && (
               <div className="absolute inset-0 flex items-center justify-center bg-gray-900 bg-opacity-75 rounded">
-                <span className="text-gray-500 text-sm">
+                <span className="text-gray-500 text-xs sm:text-sm">
                   {loadedTrack.preview_url ? 'Generating waveform...' : 'Waveform not available'}
                 </span>
               </div>
             )}
           </>
         ) : (
-          <div className="bg-gray-900 h-24 rounded flex items-center justify-center">
-            <span className="text-gray-500 text-sm">No Track Loaded</span>
+          <div className="bg-gray-900 h-16 sm:h-24 rounded flex items-center justify-center">
+            <span className="text-gray-500 text-xs sm:text-sm">No Track Loaded</span>
           </div>
         )}
       </div>

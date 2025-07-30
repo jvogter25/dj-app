@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react'
 import { Upload, Music, Cloud, Folder, Search } from 'lucide-react'
 import { AudioSource } from '../../types/mixStudio'
 import { audioFileDB } from '../../lib/audioFileDatabase'
+import { SpotifyBrowser } from './SpotifyBrowser'
 
 interface AudioSourceBrowserProps {
   onTrackSelect: (source: AudioSource) => void
@@ -222,12 +223,7 @@ export const AudioSourceBrowser: React.FC<AudioSourceBrowserProps> = ({ onTrackS
         )}
         
         {activeTab === 'spotify' && (
-          <div className="text-center py-8 text-gray-500">
-            <Music className="w-12 h-12 mx-auto mb-3 opacity-50" />
-            <p className="text-sm">Spotify tracks for reference only</p>
-            <p className="text-xs mt-2">Due to licensing, Spotify tracks cannot be edited</p>
-            <p className="text-xs mt-1">Use them as placeholders and replace with local files</p>
-          </div>
+          <SpotifyBrowser onTrackSelect={onTrackSelect} />
         )}
       </div>
     </div>

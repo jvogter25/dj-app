@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react'
 import { MixProject, Track, AudioClip } from '../../types/mixStudio'
 import { Volume2, VolumeX, Headphones, Plus, Trash2, Scissors } from 'lucide-react'
+import { PlaceholderReplacer } from './PlaceholderReplacer'
 
 // Extended AudioClip type with color
 interface AudioClipWithColor extends AudioClip {
@@ -43,6 +44,8 @@ export const EnhancedTimeline: React.FC<TimelineProps> = ({
   const [dragPreview, setDragPreview] = useState<{ x: number; y: number; width: number; trackIndex: number } | null>(null)
   const [isDraggingClip, setIsDraggingClip] = useState(false)
   const [clipDragInfo, setClipDragInfo] = useState<{ clip: AudioClipWithColor; trackId: string; offsetX: number } | null>(null)
+  const [showReplacer, setShowReplacer] = useState(false)
+  const [replacerClip, setReplacerClip] = useState<{ trackId: string; clip: AudioClipWithColor } | null>(null)
   
   const pixelsPerSecond = PIXELS_PER_SECOND * zoom
   const totalWidth = Math.max(project.duration * pixelsPerSecond, containerRef.current?.clientWidth || 0)
@@ -396,6 +399,51 @@ export const EnhancedTimeline: React.FC<TimelineProps> = ({
       setSelectedClip(null)
     }
   }
+
+  // Handle right-click context menu
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault()
+    
+    const rect = canvasRef.current?.getBoundingClientRect()
+    if (!rect) return
+    
+    const x = e.clientX - rect.left
+    const y = e.clientY - rect.top
+    
+    if (y < RULER_HEIGHT) return
+    
+    const trackIndex = Math.floor((y - RULER_HEIGHT) / TRACK_HEIGHT)
+    if (trackIndex >= 0 && trackIndex < project.tracks.length) {
+      const track = project.tracks[trackIndex]
+      const clickTime = x / pixelsPerSecond
+      
+      // Find clicked clip
+      const clickedClip = track.clips.find(clip => 
+        clickTime >= clip.startTime && clickTime <= clip.startTime + clip.duration
+      ) as AudioClipWithColor
+      
+      // Only show replacer for non-editable clips (Spotify placeholders)
+      if (clickedClip && !clickedClip.source.isEditable) {
+        setReplacerClip({ trackId: track.id, clip: clickedClip })
+        setShowReplacer(true)
+      }
+    }
+  }
+
+  // Handle placeholder replacement
+  const handleReplaceClip = (newSource: any) => {
+    if (!replacerClip) return
+    
+    const updatedClip: Partial<AudioClipWithColor> = {
+      source: newSource,
+      sourceId: newSource.id,
+      duration: newSource.duration
+    }
+    
+    onClipUpdate(replacerClip.trackId, replacerClip.clip.id, updatedClip)
+    setShowReplacer(false)
+    setReplacerClip(null)
+  }
   
   const getRandomColor = () => {
     const colors = [
@@ -490,6 +538,7 @@ export const EnhancedTimeline: React.FC<TimelineProps> = ({
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
+        onContextMenu={handleContextMenu}
       >
         <canvas
           ref={canvasRef}
@@ -521,6 +570,18 @@ export const EnhancedTimeline: React.FC<TimelineProps> = ({
           </div>
         )}
       </div>
+
+      {/* Placeholder Replacer Modal */}
+      {showReplacer && replacerClip && (
+        <PlaceholderReplacer
+          placeholder={replacerClip.clip.source}
+          onReplace={handleReplaceClip}
+          onClose={() => {
+            setShowReplacer(false)
+            setReplacerClip(null)
+          }}
+        />
+      )}
     </div>
   )
 }

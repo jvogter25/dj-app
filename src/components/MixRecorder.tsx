@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { Mic, Square, Pause, Play, Download, Save } from 'lucide-react'
 import { MixRecorder as MixRecorderEngine, RecordingState, MixMetadata } from '../lib/mixRecorder'
 import { usePlayer } from '../contexts/PlayerContext'
+import { useNotifications } from '../hooks/useNotifications'
 
 interface TracklistEntry {
   time: number
@@ -11,6 +12,7 @@ interface TracklistEntry {
 
 export const MixRecorder: React.FC = () => {
   const { deckA, deckB } = usePlayer()
+  const { notifyMixComplete } = useNotifications()
   const [recordingState, setRecordingState] = useState<RecordingState>({
     isRecording: false,
     isPaused: false,
@@ -111,6 +113,10 @@ export const MixRecorder: React.FC = () => {
       const blob = await recorderRef.current.stopRecording()
       setRecordedBlob(blob)
       setShowExportDialog(true)
+      
+      // Send notification that mix is complete
+      const mixName = mixTitle || `Mix ${new Date().toLocaleDateString()}`
+      await notifyMixComplete(mixName)
     } catch (error) {
       console.error('Failed to stop recording:', error)
     }
