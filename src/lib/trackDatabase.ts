@@ -6,6 +6,9 @@ export interface TrackAnalysis {
   artists: string[]
   album: string
   duration: number
+  popularity?: number // 0-100
+  explicit?: boolean
+  year?: number // Release year
   analyzedAt: number // timestamp
   
   // Spotify audio features
@@ -15,6 +18,7 @@ export interface TrackAnalysis {
   valence: number // happiness/positivity
   acousticness: number
   instrumentalness: number
+  liveness: number
   speechiness: number
   loudness: number
   key: number // 0-11 (C, C#, D, etc.)
@@ -25,6 +29,19 @@ export interface TrackAnalysis {
   camelotKey?: string // e.g., "8A", "5B"
   energyLevel?: 'low' | 'medium' | 'high'
   moodCategory?: 'dark' | 'neutral' | 'bright'
+  genre?: string // Detected genre
+  
+  // Enhanced analysis (optional)
+  analysis?: {
+    genreClassification?: {
+      primary: string
+      confidence: number
+      alternatives: Array<{ genre: string; confidence: number }>
+    }
+    spectralFeatures?: any
+    moodFeatures?: any
+    vocalFeatures?: any
+  }
   
   // Future: Advanced analysis
   sections?: any[] // Song structure

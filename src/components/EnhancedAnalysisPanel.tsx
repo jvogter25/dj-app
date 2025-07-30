@@ -4,13 +4,15 @@ import {
   Music, BarChart3, Activity, Brain, Eye, TrendingUp, 
   Clock, Volume2, Zap, Headphones, Layers, Settings,
   ChevronDown, ChevronRight, Info, AlertCircle, CheckCircle,
-  Mic, Radio, Users
+  Mic, Radio, Users, Sparkles
 } from 'lucide-react'
 import { useEnhancedAnalysis } from '../hooks/useEnhancedAnalysis'
 import { EnhancedAnalysisResult } from '../lib/enhancedAudioAnalysis'
 import { SpectralFeatures } from '../lib/spectralAnalysis'
 import { useCrowdResponse } from '../hooks/useCrowdResponse'
 import { CrowdResponseDisplay } from './CrowdResponseDisplay'
+import { useEffectsRecommendations } from '../hooks/useEffectsRecommendations'
+import { EffectsRecommendationDisplay } from './EffectsRecommendationDisplay'
 
 interface EnhancedAnalysisPanelProps {
   trackId: string
@@ -41,7 +43,20 @@ export const EnhancedAnalysisPanel: React.FC<EnhancedAnalysisPanelProps> = ({
     updateContext
   } = useCrowdResponse()
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'spectral' | 'mood' | 'vocal' | 'genre' | 'similar' | 'crowd' | 'insights'>('overview')
+  const {
+    recommendations,
+    transitionEffects,
+    isLoading: isLoadingEffects,
+    applyEffect
+  } = useEffectsRecommendations({
+    trackAnalysis: analysisResult || undefined,
+    mixPoints: undefined, // TODO: Add mix points when available
+    transitionSuggestion: undefined, // TODO: Add transition suggestion when available
+    audioContext: undefined, // TODO: Add audio context when available
+    bpm: analysisResult?.basicFeatures?.tempo
+  })
+
+  const [activeTab, setActiveTab] = useState<'overview' | 'spectral' | 'mood' | 'vocal' | 'genre' | 'similar' | 'crowd' | 'effects' | 'insights'>('overview')
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['basic']))
 
   // Load analysis results on mount
@@ -215,6 +230,7 @@ export const EnhancedAnalysisPanel: React.FC<EnhancedAnalysisPanelProps> = ({
             { id: 'genre', label: 'Genre', icon: Radio },
             { id: 'similar', label: 'Similar', icon: TrendingUp },
             { id: 'crowd', label: 'Crowd', icon: Users },
+            { id: 'effects', label: 'Effects', icon: Sparkles },
             { id: 'insights', label: 'AI Insights', icon: Settings }
           ].map(({ id, label, icon: Icon }) => (
             <button
@@ -412,6 +428,16 @@ export const EnhancedAnalysisPanel: React.FC<EnhancedAnalysisPanelProps> = ({
               updateContext(context)
               predictCrowdResponse(trackId, context)
             }}
+          />
+        )}
+
+        {/* Effects Tab */}
+        {activeTab === 'effects' && (
+          <EffectsRecommendationDisplay
+            recommendations={recommendations}
+            transitionEffects={transitionEffects}
+            onApplyEffect={applyEffect}
+            isLoading={isLoadingEffects}
           />
         )}
 
