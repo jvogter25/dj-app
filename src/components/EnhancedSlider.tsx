@@ -41,9 +41,25 @@ export const EnhancedSlider: React.FC<EnhancedSliderProps> = ({
     sensitivity
   })
 
+  const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (disabled) return
+    
+    const rect = e.currentTarget.getBoundingClientRect()
+    const percent = orientation === 'vertical' 
+      ? 1 - (e.clientY - rect.top) / rect.height
+      : (e.clientX - rect.left) / rect.width
+    
+    const newValue = min + (percent * (max - min))
+    const steppedValue = Math.round(newValue / step) * step
+    const clampedValue = Math.max(min, Math.min(max, steppedValue))
+    
+    onChange(clampedValue)
+  }
+
   return (
     <div 
       className={`relative touch-none ${className}`}
+      onClick={handleClick}
       {...(disabled ? {} : gestureBindings())}
     >
       <input
@@ -120,6 +136,23 @@ export const EnhancedKnob: React.FC<EnhancedKnobProps> = ({
   const normalizedValue = (value - min) / range
   const rotation = (normalizedValue - 0.5) * 270 // -135° to +135°
 
+  const handleKnobClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (disabled) return
+    
+    const rect = e.currentTarget.getBoundingClientRect()
+    const centerX = rect.left + rect.width / 2
+    const centerY = rect.top + rect.height / 2
+    
+    // Calculate angle from center
+    const angle = Math.atan2(e.clientY - centerY, e.clientX - centerX)
+    // Convert to 0-1 range (map -135° to +135° range)
+    const normalizedAngle = (angle + Math.PI * 0.75) / (Math.PI * 1.5)
+    const clampedAngle = Math.max(0, Math.min(1, normalizedAngle))
+    
+    const newValue = min + (clampedAngle * range)
+    onChange(newValue)
+  }
+
   return (
     <div className={`text-center ${className}`}>
       <div className="relative">
@@ -146,6 +179,7 @@ export const EnhancedKnob: React.FC<EnhancedKnobProps> = ({
             ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
             touch-none
           `}
+          onClick={handleKnobClick}
           {...(disabled ? {} : gestureBindings())}
         >
           <div 
@@ -212,6 +246,17 @@ export const EnhancedFader: React.FC<EnhancedFaderProps> = ({
   const normalizedValue = (value - min) / range
   const position = (1 - normalizedValue) * 100 // Inverted for top-to-bottom
 
+  const handleFaderClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (disabled) return
+    
+    const rect = e.currentTarget.getBoundingClientRect()
+    const percent = 1 - (e.clientY - rect.top) / rect.height // Inverted for top-to-bottom
+    const clampedPercent = Math.max(0, Math.min(1, percent))
+    
+    const newValue = min + (clampedPercent * range)
+    onChange(newValue)
+  }
+
   return (
     <div className={`flex flex-col items-center ${className}`}>
       {label && (
@@ -224,6 +269,7 @@ export const EnhancedFader: React.FC<EnhancedFaderProps> = ({
           ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
         `}
         style={{ height: `${height}px` }}
+        onClick={handleFaderClick}
         {...(disabled ? {} : gestureBindings())}
       >
         {/* Hidden range input for accessibility */}

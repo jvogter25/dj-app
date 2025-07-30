@@ -45,9 +45,10 @@ export const useGestureControls = ({
     onPinchStart: () => {
       startValue.current = value
     },
-    onDrag: ({ movement: [mx, my], event, touches }) => {
-      // Only respond to multi-touch drag (2 fingers)
-      if (touches === 2) {
+    onDrag: ({ movement: [mx, my], event, touches, buttons }) => {
+      // Respond to both single-touch drag AND multi-touch drag
+      // Single touch (mouse/finger) OR multi-touch (2 fingers)
+      if (touches <= 2 && buttons === 1) {
         event.preventDefault()
         event.stopPropagation()
         const delta = Math.abs(mx) > Math.abs(my) ? mx : -my
@@ -58,8 +59,9 @@ export const useGestureControls = ({
         onChange(newValue)
       }
     },
-    onDragStart: ({ touches }) => {
-      if (touches === 2) {
+    onDragStart: ({ touches, buttons }) => {
+      // Start drag for both single and multi-touch
+      if ((touches <= 2 && buttons === 1) || touches === 2) {
         startValue.current = value
       }
     }
