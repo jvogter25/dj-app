@@ -34,7 +34,8 @@ export const MoodVisualization: React.FC<MoodVisualizationProps> = ({
     playful: Sun,
     serious: Mountain,
     nostalgic: Heart,
-    futuristic: Zap
+    futuristic: Zap,
+    dramatic: Mountain
   }
 
   const getMoodColor = (mood: MoodType): string => {
@@ -56,7 +57,8 @@ export const MoodVisualization: React.FC<MoodVisualizationProps> = ({
       playful: 'text-green-300',
       serious: 'text-gray-500',
       nostalgic: 'text-amber-400',
-      futuristic: 'text-cyan-300'
+      futuristic: 'text-cyan-300',
+      dramatic: 'text-purple-500'
     }
     return moodColors[mood] || 'text-gray-400'
   }

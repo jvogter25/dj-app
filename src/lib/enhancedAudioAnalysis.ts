@@ -17,6 +17,8 @@ export interface EnhancedAnalysisResult {
     channels: number
     bitrate: number
     format: string
+    tempo?: number
+    musicalKey?: string
   }
   spectralFeatures: SpectralFeatures
   moodFeatures: MoodFeatures

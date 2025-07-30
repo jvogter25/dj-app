@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { spotifyAuthPKCE } from '../lib/spotifyPKCE'
 import { trackDB, TrackAnalysis } from '../lib/trackDatabase'
 import { getCamelotKey, getCamelotColor, getKeyName } from '../lib/harmonicMixing'
+import { EnhancedSlider } from './EnhancedSlider'
 
 interface SpotifyTrack {
   id: string
@@ -708,37 +709,37 @@ export const TrackBrowser: React.FC<TrackBrowserProps> = ({ onTrackSelect }) => 
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <span className="text-xs text-gray-400 w-8">Min:</span>
-                <input
-                  type="range"
-                  min="60"
-                  max="200"
+                <EnhancedSlider
+                  min={60}
+                  max={200}
                   value={bpmFilter.min}
-                  onChange={(e) => {
-                    const newMin = parseInt(e.target.value)
+                  onChange={(value) => {
+                    const newMin = Math.round(value)
                     setBpmFilter(prev => ({ 
                       min: Math.min(newMin, prev.max - 10), 
                       max: prev.max 
                     }))
                   }}
                   className="flex-1 h-1"
+                  title="Minimum BPM filter - supports click-and-drag and trackpad gestures"
                 />
                 <span className="text-xs text-purple-400 font-mono w-8">{bpmFilter.min}</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-xs text-gray-400 w-8">Max:</span>
-                <input
-                  type="range"
-                  min="60"
-                  max="200"
+                <EnhancedSlider
+                  min={60}
+                  max={200}
                   value={bpmFilter.max}
-                  onChange={(e) => {
-                    const newMax = parseInt(e.target.value)
+                  onChange={(value) => {
+                    const newMax = Math.round(value)
                     setBpmFilter(prev => ({ 
                       min: prev.min,
                       max: Math.max(newMax, prev.min + 10)
                     }))
                   }}
                   className="flex-1 h-1"
+                  title="Maximum BPM filter - supports click-and-drag and trackpad gestures"
                 />
                 <span className="text-xs text-purple-400 font-mono w-8">{bpmFilter.max}</span>
               </div>

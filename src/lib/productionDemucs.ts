@@ -957,7 +957,8 @@ export class ProductionDemucsProcessor {
       'htdemucs_ft': 3.5,   // Fine-tuned version
       'mdx_extra': 2.5,     // Good balance
       'mdx': 2.0,           // Faster
-      'mdx_q': 1.5          // Fastest
+      'mdx_q': 1.5,         // Fastest
+      'mdx_extra_q': 1.8    // Extra quality variant
     }
     
     const baseMultiplier = modelMultipliers[finalConfig.model] || 3.0
@@ -1006,10 +1007,16 @@ export class ProductionDemucsProcessor {
         description: 'Optimized for speed with good quality',
         quality: 'fast' as const,
         speciality: 'Fast processing with decent results'
+      },
+      'mdx_extra_q': {
+        name: 'MDX-Net Extra Quantized',
+        description: 'Quantized version of MDX Extra for efficiency',
+        quality: 'medium' as const,
+        speciality: 'Balance of enhanced quality and speed'
       }
     }
     
-    return modelInfo[modelName] || null
+    return (modelInfo as any)[modelName] || null
   }
 
   /**

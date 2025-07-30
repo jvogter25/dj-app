@@ -4,6 +4,7 @@ import { useGestureControls, useJogWheel } from '../hooks/useGestureControls'
 import { WaveformDisplay } from './WaveformDisplay'
 import { waveformGenerator, WaveformData } from '../lib/waveformGenerator'
 import { processedTracksService } from '../lib/processedTracksService'
+import { EnhancedSlider, EnhancedKnob } from './EnhancedSlider'
 
 interface DeckProps {
   deckId: 'A' | 'B'
@@ -118,14 +119,7 @@ export const Deck: React.FC<DeckProps> = ({
     generateWaveform()
   }, [loadedTrack])
   
-  // Gesture controls for tempo slider
-  const tempoGestures = useGestureControls({
-    min: -10,
-    max: 10,
-    value: tempo,
-    onChange: onTempoChange,
-    sensitivity: 0.3
-  })
+  // Remove individual gesture controls since EnhancedSlider handles this internally
   
   // Jog wheel for scratching/nudging
   const jogWheelGestures = useJogWheel((delta) => {
@@ -281,7 +275,7 @@ export const Deck: React.FC<DeckProps> = ({
       </div>
       
       {/* Tempo Slider */}
-      <div className="mb-4 touch-none" {...tempoGestures()}>
+      <div className="mb-4">
         <div className="flex justify-between text-sm text-gray-400 mb-1">
           <span>Tempo</span>
           <div className="flex items-center gap-2">
@@ -304,14 +298,15 @@ export const Deck: React.FC<DeckProps> = ({
             )}
           </div>
         </div>
-        <input
-          type="range"
-          min="-50"
-          max="100"
-          step="1"
+        <EnhancedSlider
+          min={-50}
+          max={100}
+          step={1}
           value={tempo}
-          onChange={(e) => onTempoChange(parseFloat(e.target.value))}
-          className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+          onChange={onTempoChange}
+          sensitivity={0.3}
+          className="mb-1"
+          title="Tempo control - supports click-and-drag and trackpad gestures"
         />
         <div className="flex justify-between text-xs text-gray-500 mt-1">
           <span>-50%</span>
@@ -327,43 +322,31 @@ export const Deck: React.FC<DeckProps> = ({
           { band: 'Mid', value: midEQ, setValue: setMidEQ, color: 'yellow' },
           { band: 'Low', value: lowEQ, setValue: setLowEQ, color: 'blue' }
         ].map(({ band, value, setValue, color: bandColor }) => (
-          <div key={band} className="text-center">
-            <div className="relative">
-              <input
-                type="range"
-                min="-20"
-                max="20"
-                value={value}
-                onChange={(e) => {
-                  const newValue = parseInt(e.target.value)
-                  setValue(newValue)
-                  console.log(`[${deckId}] ${band} EQ:`, newValue)
-                  
-                  // Update EQ in audio processor
-                  if (onEQChange) {
-                    const newEQ = {
-                      high: band === 'High' ? newValue : highEQ,
-                      mid: band === 'Mid' ? newValue : midEQ,
-                      low: band === 'Low' ? newValue : lowEQ
-                    }
-                    onEQChange(newEQ)
-                  }
-                }}
-                className="absolute inset-0 w-12 h-12 opacity-0 cursor-pointer mx-auto"
-                title={`${band} frequency adjustment`}
-              />
-              <div className={`w-12 h-12 bg-gray-700 hover:bg-gray-600 rounded-full mx-auto mb-1 flex items-center justify-center transition-all border-2 ${value !== 0 ? `border-${bandColor}-500` : 'border-transparent'}`}>
-                <div 
-                  className={`w-2 h-6 ${value !== 0 ? `bg-${bandColor}-500` : 'bg-gray-400'} rounded transition-all`}
-                  style={{ transform: `rotate(${value * 9}deg)` }}
-                />
-              </div>
-            </div>
-            <span className="text-xs text-gray-400">{band}</span>
-            <div className={`text-xs font-mono ${value !== 0 ? `text-${bandColor}-400` : 'text-gray-600'}`}>
-              {value > 0 ? '+' : ''}{value}
-            </div>
-          </div>
+          <EnhancedKnob
+            key={band}
+            min={-20}
+            max={20}
+            value={value}
+            onChange={(newValue) => {
+              setValue(newValue)
+              console.log(`[${deckId}] ${band} EQ:`, newValue)
+              
+              // Update EQ in audio processor
+              if (onEQChange) {
+                const newEQ = {
+                  high: band === 'High' ? newValue : highEQ,
+                  mid: band === 'Mid' ? newValue : midEQ,
+                  low: band === 'Low' ? newValue : lowEQ
+                }
+                onEQChange(newEQ)
+              }
+            }}
+            sensitivity={0.5}
+            size="md"
+            color={bandColor}
+            label={band}
+            title={`${band} frequency adjustment - supports click-and-drag and trackpad gestures`}
+          />
         ))}
       </div>
     </div>

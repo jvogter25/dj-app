@@ -45,6 +45,7 @@ export type MoodType =
   | 'happy' | 'sad' | 'angry' | 'calm' | 'energetic' | 'melancholic'
   | 'euphoric' | 'aggressive' | 'peaceful' | 'tense' | 'romantic' | 'mysterious'
   | 'uplifting' | 'dark' | 'playful' | 'serious' | 'nostalgic' | 'futuristic'
+  | 'dramatic'
 
 export interface MoodSegment {
   startTime: number
@@ -423,7 +424,7 @@ export class ProductionMoodAnalyzer {
     const moodScores: Record<MoodType, number> = {
       'happy': 0, 'sad': 0, 'angry': 0, 'calm': 0, 'energetic': 0, 'melancholic': 0,
       'euphoric': 0, 'aggressive': 0, 'peaceful': 0, 'tense': 0, 'romantic': 0, 'mysterious': 0,
-      'uplifting': 0, 'dark': 0, 'playful': 0, 'serious': 0, 'nostalgic': 0, 'futuristic': 0
+      'uplifting': 0, 'dark': 0, 'playful': 0, 'serious': 0, 'nostalgic': 0, 'futuristic': 0, 'dramatic': 0
     }
     
     if (features.length === 0) return moodScores
@@ -451,7 +452,7 @@ export class ProductionMoodAnalyzer {
     if (avgCentroid > 0.6) {
       moodScores.happy += 0.6
       moodScores.playful += 0.5
-      moodScores.bright += 0.7
+      moodScores.uplifting += 0.7
     } else if (avgCentroid < 0.4) {
       moodScores.dark += 0.6
       moodScores.mysterious += 0.5

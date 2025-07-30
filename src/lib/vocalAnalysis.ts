@@ -59,8 +59,8 @@ export class ProductionVocalAnalyzer {
   private readonly maxVocalFreq = 8000 // Hz
   
   // Pre-computed filter coefficients for vocal frequency range
-  private vocalBandpass: Float32Array
-  private harmonicTemplate: Float32Array
+  private vocalBandpass: Float32Array | null = null
+  private harmonicTemplate: Float32Array | null = null
   
   constructor() {
     this.initializeFilters()
@@ -711,7 +711,11 @@ export class ProductionVocalAnalyzer {
   }
 
   private computeEnvelope(frame: Float32Array): number {
-    return Math.max(...frame.map(Math.abs))
+    let maxVal = 0
+    for (let i = 0; i < frame.length; i++) {
+      maxVal = Math.max(maxVal, Math.abs(frame[i]))
+    }
+    return maxVal
   }
 
   // Additional helper methods would be implemented here...
@@ -837,7 +841,11 @@ export class ProductionVocalAnalyzer {
     }
     
     const f0 = maxIdx > 0 ? this.sampleRate / maxIdx : 0
-    const confidence = maxVal / Math.max(...cepstrumMag.slice(0, maxQuefrency))
+    let maxCepstrum = 0
+    for (let i = 0; i < maxQuefrency && i < cepstrumMag.length; i++) {
+      maxCepstrum = Math.max(maxCepstrum, cepstrumMag[i])
+    }
+    const confidence = maxCepstrum > 0 ? maxVal / maxCepstrum : 0
     
     return { f0, confidence }
   }

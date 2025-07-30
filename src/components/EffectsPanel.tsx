@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { Sliders, Disc, Wind, Zap, Radio, Filter as FilterIcon } from 'lucide-react'
+import { EnhancedSlider } from './EnhancedSlider'
 
 export interface EffectSettings {
   reverb: number
@@ -74,14 +75,15 @@ export const EffectsPanel: React.FC<EffectsPanelProps> = ({
             </div>
             
             <div className="flex items-center gap-2">
-              <input
-                type="range"
-                min="0"
-                max="100"
+              <EnhancedSlider
+                min={0}
+                max={100}
                 value={effects[key]}
-                onChange={(e) => onEffectChange(key, parseInt(e.target.value))}
+                onChange={(value) => onEffectChange(key, Math.round(value))}
                 disabled={!enabledEffects.has(key)}
-                className="flex-1 disabled:opacity-30"
+                sensitivity={1}
+                className="flex-1"
+                title={`${name} effect control - supports click-and-drag and trackpad gestures`}
               />
             </div>
           </div>

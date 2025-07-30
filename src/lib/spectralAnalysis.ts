@@ -71,11 +71,11 @@ export interface SpectralAnalysisConfig {
 
 export class ProductionSpectralAnalyzer {
   private config: SpectralAnalysisConfig
-  private windowFunction: Float32Array
-  private melFilterBank: Float32Array[]
-  private chromaFilterBank: Float32Array[]
-  private dctMatrix: Float32Array[]
-  private audioContext: AudioContext
+  private windowFunction: Float32Array | null = null
+  private melFilterBank: Float32Array[] = []
+  private chromaFilterBank: Float32Array[] = []
+  private dctMatrix: Float32Array[] = []
+  private audioContext: AudioContext | null = null
 
   constructor(config: Partial<SpectralAnalysisConfig> = {}) {
     this.config = {
@@ -221,7 +221,10 @@ export class ProductionSpectralAnalyzer {
   }
 
   private normalizeAudio(samples: Float32Array): Float32Array {
-    const maxAbs = Math.max(...samples.map(Math.abs))
+    let maxAbs = 0
+    for (let i = 0; i < samples.length; i++) {
+      maxAbs = Math.max(maxAbs, Math.abs(samples[i]))
+    }
     if (maxAbs === 0) return samples
     
     const normalized = new Float32Array(samples.length)
@@ -242,7 +245,7 @@ export class ProductionSpectralAnalyzer {
       
       // Extract frame and apply window
       for (let j = 0; j < this.config.frameSize && start + j < samples.length; j++) {
-        frame[j] = samples[start + j] * this.windowFunction[j]
+        frame[j] = samples[start + j] * (this.windowFunction?.[j] || 1)
       }
       
       frames.push(frame)
@@ -509,8 +512,8 @@ export class ProductionSpectralAnalyzer {
         frameIdx
       )
       
-      harmonicSpectrum.push(harmonic)
-      percussiveSpectrum.push(percussive)
+      harmonicSpectrum.push(Array.from(harmonic))
+      percussiveSpectrum.push(Array.from(percussive))
       
       // Compute harmonic ratio
       const harmonicEnergy = harmonic.reduce((sum, val) => sum + val * val, 0)

@@ -4,11 +4,13 @@ import {
   Music, BarChart3, Activity, Brain, Eye, TrendingUp, 
   Clock, Volume2, Zap, Headphones, Layers, Settings,
   ChevronDown, ChevronRight, Info, AlertCircle, CheckCircle,
-  Mic, Radio
+  Mic, Radio, Users
 } from 'lucide-react'
 import { useEnhancedAnalysis } from '../hooks/useEnhancedAnalysis'
 import { EnhancedAnalysisResult } from '../lib/enhancedAudioAnalysis'
 import { SpectralFeatures } from '../lib/spectralAnalysis'
+import { useCrowdResponse } from '../hooks/useCrowdResponse'
+import { CrowdResponseDisplay } from './CrowdResponseDisplay'
 
 interface EnhancedAnalysisPanelProps {
   trackId: string
@@ -32,7 +34,14 @@ export const EnhancedAnalysisPanel: React.FC<EnhancedAnalysisPanelProps> = ({
     clearError
   } = useEnhancedAnalysis()
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'spectral' | 'mood' | 'vocal' | 'genre' | 'similar' | 'insights'>('overview')
+  const {
+    crowdResponse,
+    crowdContext,
+    predictCrowdResponse,
+    updateContext
+  } = useCrowdResponse()
+
+  const [activeTab, setActiveTab] = useState<'overview' | 'spectral' | 'mood' | 'vocal' | 'genre' | 'similar' | 'crowd' | 'insights'>('overview')
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['basic']))
 
   // Load analysis results on mount
@@ -40,8 +49,9 @@ export const EnhancedAnalysisPanel: React.FC<EnhancedAnalysisPanelProps> = ({
     if (trackId) {
       getAnalysisResults(trackId)
       findSimilarTracks(trackId)
+      predictCrowdResponse(trackId)
     }
-  }, [trackId, getAnalysisResults, findSimilarTracks])
+  }, [trackId, getAnalysisResults, findSimilarTracks, predictCrowdResponse])
 
   const toggleSection = (section: string) => {
     const newExpanded = new Set(expandedSections)
@@ -204,6 +214,7 @@ export const EnhancedAnalysisPanel: React.FC<EnhancedAnalysisPanelProps> = ({
             { id: 'vocal', label: 'Vocals', icon: Mic },
             { id: 'genre', label: 'Genre', icon: Radio },
             { id: 'similar', label: 'Similar', icon: TrendingUp },
+            { id: 'crowd', label: 'Crowd', icon: Users },
             { id: 'insights', label: 'AI Insights', icon: Settings }
           ].map(({ id, label, icon: Icon }) => (
             <button
@@ -379,7 +390,7 @@ export const EnhancedAnalysisPanel: React.FC<EnhancedAnalysisPanelProps> = ({
         {activeTab === 'genre' && (
           <div className="text-center text-gray-400 py-8">
             <Radio className="w-12 h-12 mx-auto mb-3 opacity-50" />
-            <p>Genre classification coming soon</p>
+            <p>Genre classification temporarily disabled during development</p>
           </div>
         )}
 
@@ -388,6 +399,19 @@ export const EnhancedAnalysisPanel: React.FC<EnhancedAnalysisPanelProps> = ({
           <SimilarTracksView 
             tracks={similarTracks} 
             onTrackSelect={onSimilarTrackSelect}
+          />
+        )}
+
+        {/* Crowd Response Tab */}
+        {activeTab === 'crowd' && (
+          <CrowdResponseDisplay
+            analysisResult={analysisResult}
+            crowdResponse={crowdResponse}
+            crowdContext={crowdContext}
+            onContextChange={(context) => {
+              updateContext(context)
+              predictCrowdResponse(trackId, context)
+            }}
           />
         )}
 

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Play, Pause, Volume2, VolumeX, RotateCcw, SkipBack, SkipForward } from 'lucide-react'
 import { StemFile } from '../lib/cdnStorage'
 import { useCDNStorage } from '../hooks/useCDNStorage'
+import { EnhancedSlider } from './EnhancedSlider'
 
 interface StemPlayerProps {
   stems: StemFile[]
@@ -366,15 +367,15 @@ export const StemPlayer: React.FC<StemPlayerProps> = ({
                     )}
                   </button>
                   
-                  <input
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.01"
+                  <EnhancedSlider
+                    min={0}
+                    max={1}
+                    step={0.01}
                     value={stemState.volume}
-                    onChange={(e) => adjustStemVolume(stem.id, parseFloat(e.target.value))}
+                    onChange={(value) => adjustStemVolume(stem.id, value)}
                     disabled={stemState.error || !stemState.loaded}
-                    className="flex-1 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer slider"
+                    className="flex-1 h-1"
+                    title={`${stem.stemType} volume - supports click-and-drag and trackpad gestures`}
                   />
                 </div>
               </div>
