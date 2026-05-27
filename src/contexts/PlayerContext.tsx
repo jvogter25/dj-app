@@ -1,12 +1,11 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react'
-import { useSpotifyPlayer } from '../hooks/useSpotifyPlayer'
 import { useEnhancedPlayer } from '../hooks/useEnhancedPlayer'
 import { CrossfaderEngine, CrossfaderCurve, TransitionType } from '../lib/crossfaderEngine'
 import { MixRecorder } from '../lib/mixRecorder'
 
 interface PlayerContextType {
-  deckA: ReturnType<typeof useSpotifyPlayer>
-  deckB: ReturnType<typeof useSpotifyPlayer>
+  deckA: ReturnType<typeof useEnhancedPlayer>
+  deckB: ReturnType<typeof useEnhancedPlayer>
   crossfaderPosition: number
   setCrossfaderPosition: (position: number) => void
   masterVolume: number
@@ -32,8 +31,8 @@ export const usePlayer = () => {
 }
 
 export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const deckA = useSpotifyPlayer('Deck A')
-  const deckB = useSpotifyPlayer('Deck B')
+  const deckA = useEnhancedPlayer({ playerId: 'Deck A' })
+  const deckB = useEnhancedPlayer({ playerId: 'Deck B' })
   const [crossfaderPosition, setCrossfaderPosition] = useState(0)
   const [masterVolume, setMasterVolume] = useState(75)
   const [channelAVolume, setChannelAVolume] = useState(75)

@@ -3,6 +3,18 @@ import { EnhancedAudioEngine, EnhancedPlayerState, AudioSource } from '../lib/en
 import { useSpotifyPlayer } from './useSpotifyPlayer'
 import { EffectsSettings } from '../lib/audioEffects'
 
+export interface LoadedTrackMeta {
+  id: string
+  title: string
+  artist: string
+  album: string
+  albumArtUrl: string | null
+  bpm: number | null
+  keyCarmelot: string | null
+  durationMs: number
+  source: 'library' | 'spotify-preview'
+}
+
 interface UseEnhancedPlayerOptions {
   playerId: string
   onTrackEnd?: () => void
@@ -16,6 +28,7 @@ export const useEnhancedPlayer = ({ playerId, onTrackEnd }: UseEnhancedPlayerOpt
   const [audioEngine, setAudioEngine] = useState<EnhancedAudioEngine | null>(null)
   const [enhancedState, setEnhancedState] = useState<EnhancedPlayerState | null>(null)
   const [isEnhancedMode, setIsEnhancedMode] = useState(false)
+  const [loadedTrackMeta, setLoadedTrackMeta] = useState<LoadedTrackMeta | null>(null)
   
   const audioContextRef = useRef<AudioContext | null>(null)
   
@@ -213,18 +226,48 @@ export const useEnhancedPlayer = ({ playerId, onTrackEnd }: UseEnhancedPlayerOpt
     return spotifyPlayer.tempo
   }
   
+  /**
+   * Load a track from a direct URL into the audio engine.
+   * This is the primary load path for library tracks downloaded via Railway.
+   * Bypasses Spotify entirely — gives full Web Audio API control.
+   */
+  const loadFromUrl = useCallback(async (
+    url: string,
+    meta: LoadedTrackMeta
+  ): Promise<void> => {
+    if (!audioEngine) {
+      throw new Error('Audio engine not initialized')
+    }
+
+    // Stop current playback
+    audioEngine.stop()
+
+    // Load into buffer for full tempo/pitch control
+    const source: AudioSource = {
+      url,
+      type: 'local',
+      duration: meta.durationMs / 1000
+    }
+
+    await audioEngine.loadAudio(source)
+    setLoadedTrackMeta(meta)
+    setIsEnhancedMode(true)
+  }, [audioEngine])
+
   return {
-    // Spotify player passthrough
+    // Spotify player passthrough (used for auth/metadata only)
     player: spotifyPlayer.player,
     deviceId: spotifyPlayer.deviceId,
-    
+
     // Unified state
     playerState: getPlayerState(),
     tempo: getTempo(),
     isEnhanced: isEnhancedMode,
-    
+    loadedTrackMeta,
+
     // Track loading
     loadTrack: spotifyPlayer.loadTrack,
+    loadFromUrl,
     
     // Playback controls
     togglePlay,

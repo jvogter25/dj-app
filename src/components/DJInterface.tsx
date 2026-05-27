@@ -2,25 +2,24 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Deck } from './Deck'
 import { Mixer } from './Mixer'
-import { TrackBrowser } from './TrackBrowser'
-import { SoundCloudBrowser } from './SoundCloudBrowser'
+import { LibraryBrowser } from './LibraryBrowser'
 import { GestureHelp } from './GestureHelp'
 import { SmartTransition } from './SmartTransition'
 import { TransitionType } from '../lib/crossfaderEngine'
 import { LoopCapture } from './LoopCapture'
 import { EffectsPanel, EffectSettings } from './EffectsPanel'
 import { SetupWizard } from './SetupWizard'
-import { SmartQueue } from './SmartQueue'
 import { MixRecorder } from './MixRecorder'
 import { NotificationSettings } from './NotificationSettings'
 import ErrorBoundary from './ErrorBoundary'
-import { Library, Settings, Radio, X, ChevronUp, ChevronDown, HelpCircle, Music, Cloud, Layers } from 'lucide-react'
+import { Library, Settings, Radio, X, ChevronUp, ChevronDown, HelpCircle, Layers } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { usePlayer } from '../contexts/PlayerContext'
+import { LibraryTrack } from '../lib/libraryService'
 
 export const DJInterface: React.FC = () => {
   const navigate = useNavigate()
-  const { signOut, spotifyToken, signInWithSpotify } = useAuth()
+  const { signOut, signInWithSpotify } = useAuth()
   const { 
     deckA, 
     deckB, 
@@ -40,8 +39,7 @@ export const DJInterface: React.FC = () => {
   const [showSettings, setShowSettings] = useState(false)
   const [settingsTab, setSettingsTab] = useState<'playback' | 'notifications'>('playback')
   const [showSetupWizard, setShowSetupWizard] = useState(false)
-  const [loadedTracks, setLoadedTracks] = useState<{ A?: any, B?: any }>({})
-  const [trackSource, setTrackSource] = useState<'spotify' | 'soundcloud'>('spotify')
+  const [loadedTracks, setLoadedTracks] = useState<{ A?: LibraryTrack; B?: LibraryTrack }>({})
   
   // Effects state
   const [deckAEffects, setDeckAEffects] = useState<EffectSettings>({
@@ -59,15 +57,43 @@ export const DJInterface: React.FC = () => {
     }
   }, [])
 
-  // Handle track loading to Spotify players
-  const handleTrackSelect = async (track: any, deck: 'A' | 'B') => {
+  // Handle track loading from the library browser
+  const handleTrackLoad = async (
+    track: LibraryTrack & { audioUrl: string },
+    deck: 'A' | 'B'
+  ) => {
     setLoadedTracks(prev => ({ ...prev, [deck]: track }))
-    
-    // Load to Spotify player using URI
+
+    const meta = {
+      id: track.id,
+      title: track.title,
+      artist: track.artist,
+      album: track.album,
+      albumArtUrl: track.album_art_url,
+      bpm: track.bpm,
+      keyCarmelot: track.key_camelot,
+      durationMs: track.duration_ms,
+      source: 'library' as const
+    }
+
     if (deck === 'A') {
-      await deckA.loadTrack(track.uri)
+      await deckA.loadFromUrl(track.audioUrl, meta)
     } else {
-      await deckB.loadTrack(track.uri)
+      await deckB.loadFromUrl(track.audioUrl, meta)
+    }
+  }
+
+  // Adapt LibraryTrack to Deck's legacy prop format
+  const toDeckTrack = (track?: LibraryTrack) => {
+    if (!track) return undefined
+    return {
+      id: track.id,
+      name: track.title,
+      artists: [{ name: track.artist }],
+      album: { images: track.album_art_url ? [{ url: track.album_art_url }] : [] },
+      bpm: track.bpm ?? undefined,
+      spotify_id: track.spotify_id ?? undefined,
+      source: track.source as 'spotify' | 'soundcloud' | undefined,
     }
   }
 
@@ -180,17 +206,10 @@ export const DJInterface: React.FC = () => {
                 onSeek={deckA.seek}
                 tempo={deckA.tempo}
                 onTempoChange={deckA.setTempoAdjustment}
-                loadedTrack={loadedTracks.A}
+                loadedTrack={toDeckTrack(loadedTracks.A)}
                 playerState={deckA.playerState}
                 onEQChange={deckA.setEQ}
                 isEnhanced={deckA.isEnhanced}
-                onEnhancedToggle={() => {
-                  if (deckA.isEnhanced) {
-                    deckA.disableEnhancedMode()
-                  } else {
-                    deckA.enableEnhancedMode()
-                  }
-                }}
               />
               <LoopCapture
                 deckId="A"
@@ -225,10 +244,10 @@ export const DJInterface: React.FC = () => {
                 onMasterVolumeChange={setMasterVolume}
               />
               <SmartTransition
-                deckATempo={loadedTracks.A?.bpm}
-                deckBTempo={loadedTracks.B?.bpm}
-                deckAKey={loadedTracks.A?.audio_features?.key}
-                deckBKey={loadedTracks.B?.audio_features?.key}
+                deckATempo={loadedTracks.A?.bpm ?? undefined}
+                deckBTempo={loadedTracks.B?.bpm ?? undefined}
+                deckAKey={loadedTracks.A?.key_number ?? undefined}
+                deckBKey={loadedTracks.B?.key_number ?? undefined}
                 onTransition={handleTransition}
               />
               <MixRecorder />
@@ -244,17 +263,10 @@ export const DJInterface: React.FC = () => {
                 onSeek={deckB.seek}
                 tempo={deckB.tempo}
                 onTempoChange={deckB.setTempoAdjustment}
-                loadedTrack={loadedTracks.B}
+                loadedTrack={toDeckTrack(loadedTracks.B)}
                 playerState={deckB.playerState}
                 onEQChange={deckB.setEQ}
                 isEnhanced={deckB.isEnhanced}
-                onEnhancedToggle={() => {
-                  if (deckB.isEnhanced) {
-                    deckB.disableEnhancedMode()
-                  } else {
-                    deckB.enableEnhancedMode()
-                  }
-                }}
               />
               <LoopCapture
                 deckId="B"
@@ -272,75 +284,34 @@ export const DJInterface: React.FC = () => {
             </div>
           </div>
 
-          {/* Bottom Section - Track Browser & Smart Queue */}
+          {/* Bottom Section - Library Browser */}
           {showLibrary && (
-            <div className="mt-4 sm:mt-6 space-y-3 sm:space-y-4">
-              {/* Smart Queue */}
-              {loadedTracks.A && (
-                <SmartQueue
-                  currentTrack={loadedTracks.A}
-                  onTrackSelect={handleTrackSelect}
-                  targetDeck="B"
-                />
-              )}
-              
-              {/* Track Browser */}
+            <div className="mt-4 sm:mt-6">
               <div className="bg-gray-800 rounded-lg">
-                {/* Collapsible Header with Source Switcher */}
-                <div className="border-b border-gray-700">
-                  <button
-                    onClick={() => setLibraryExpanded(!libraryExpanded)}
-                    className="w-full px-3 sm:px-6 py-3 flex items-center justify-between hover:bg-gray-700 transition-colors"
-                  >
-                    <h3 className="text-base sm:text-lg font-semibold flex items-center gap-2">
-                      <Library className="w-4 h-4 sm:w-5 sm:h-5 text-purple-500" />
-                      <span className="hidden sm:inline">Track Browser</span>
-                      <span className="sm:hidden">Browser</span>
-                    </h3>
-                    {libraryExpanded ? (
-                      <ChevronDown className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
-                    ) : (
-                      <ChevronUp className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
-                    )}
-                  </button>
-                  
-                  {/* Source Switcher */}
-                  {libraryExpanded && (
-                    <div className="flex border-t border-gray-700">
-                      <button
-                        onClick={() => setTrackSource('spotify')}
-                        className={`flex-1 px-2 sm:px-4 py-2 flex items-center justify-center gap-1 sm:gap-2 transition-colors ${
-                          trackSource === 'spotify' 
-                            ? 'bg-green-600 text-white' 
-                            : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
-                        }`}
-                      >
-                        <Music className="w-3 h-3 sm:w-4 sm:h-4" />
-                        <span className="text-xs sm:text-sm">Spotify</span>
-                      </button>
-                      <button
-                        onClick={() => setTrackSource('soundcloud')}
-                        className={`flex-1 px-2 sm:px-4 py-2 flex items-center justify-center gap-1 sm:gap-2 transition-colors ${
-                          trackSource === 'soundcloud' 
-                            ? 'bg-orange-600 text-white' 
-                            : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
-                        }`}
-                      >
-                        <Cloud className="w-3 h-3 sm:w-4 sm:h-4" />
-                        <span className="text-xs sm:text-sm">SoundCloud</span>
-                      </button>
-                    </div>
+                {/* Collapsible Header */}
+                <button
+                  onClick={() => setLibraryExpanded(!libraryExpanded)}
+                  className="w-full px-3 sm:px-6 py-3 flex items-center justify-between hover:bg-gray-700 transition-colors rounded-t-lg"
+                >
+                  <h3 className="text-base sm:text-lg font-semibold flex items-center gap-2">
+                    <Library className="w-4 h-4 sm:w-5 sm:h-5 text-purple-500" />
+                    <span className="hidden sm:inline">Library</span>
+                    <span className="sm:hidden">Library</span>
+                  </h3>
+                  {libraryExpanded ? (
+                    <ChevronDown className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
+                  ) : (
+                    <ChevronUp className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
                   )}
-                </div>
-                
-                {/* Collapsible Content */}
+                </button>
+
                 {libraryExpanded && (
-                  <div style={{ height: '300px' }} className="sm:h-[350px] overflow-hidden">
+                  <div style={{ height: '400px' }} className="overflow-hidden border-t border-gray-700">
                     <ErrorBoundary
                       fallback={
                         <div className="p-6 h-full flex items-center justify-center">
                           <div className="text-center">
-                            <p className="text-red-400 mb-4">Error loading track browser</p>
+                            <p className="text-red-400 mb-4">Error loading library</p>
                             <button
                               onClick={() => window.location.reload()}
                               className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg"
@@ -351,15 +322,7 @@ export const DJInterface: React.FC = () => {
                         </div>
                       }
                     >
-                      {trackSource === 'spotify' ? (
-                        <TrackBrowser 
-                          onTrackSelect={handleTrackSelect}
-                        />
-                      ) : (
-                        <SoundCloudBrowser
-                          onTrackSelect={handleTrackSelect}
-                        />
-                      )}
+                      <LibraryBrowser onTrackLoad={handleTrackLoad} />
                     </ErrorBoundary>
                   </div>
                 )}
