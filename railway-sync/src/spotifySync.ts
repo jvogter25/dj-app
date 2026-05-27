@@ -32,7 +32,7 @@ async function spotifyGet<T>(endpoint: string, accessToken: string): Promise<T> 
     throw new Error(`Spotify API error ${response.status}: ${text}`)
   }
 
-  return response.json()
+  return response.json() as Promise<T>
 }
 
 /**
@@ -61,9 +61,9 @@ async function refreshSpotifyToken(userId: string, refreshToken: string): Promis
     throw new Error(`Token refresh failed: ${text}`)
   }
 
-  const data = await response.json()
-  const newAccessToken = data.access_token as string
-  const newRefreshToken = (data.refresh_token as string | undefined) || refreshToken
+  const data = await response.json() as { access_token: string; refresh_token?: string }
+  const newAccessToken = data.access_token
+  const newRefreshToken = data.refresh_token || refreshToken
 
   // Update in Supabase
   await supabase.auth.admin.updateUserById(userId, {
@@ -119,15 +119,13 @@ async function fetchAllPlaylists(accessToken: string): Promise<SpotifyPlaylist[]
   let url: string | null = '/me/playlists?limit=50'
 
   while (url) {
-    const data = await spotifyGet<{
-      items: SpotifyPlaylist[]
-      next: string | null
-    }>(url, accessToken)
+    type PlaylistPage = { items: SpotifyPlaylist[]; next: string | null }
+    const page: PlaylistPage = await spotifyGet<PlaylistPage>(url, accessToken)
 
-    playlists.push(...data.items)
+    playlists.push(...page.items)
 
     // Spotify returns full URL for next page, strip the base
-    url = data.next ? data.next.replace(SPOTIFY_API, '') : null
+    url = page.next ? page.next.replace(SPOTIFY_API, '') : null
   }
 
   return playlists
@@ -144,18 +142,16 @@ async function fetchPlaylistTracks(
   let url: string | null = `/playlists/${playlistId}/tracks?limit=100&fields=items(added_at,track(id,name,artists,album,duration_ms,uri,external_urls)),next`
 
   while (url) {
-    const data = await spotifyGet<{
-      items: Array<{ track: SpotifyTrack | null }>
-      next: string | null
-    }>(url, accessToken)
+    type TrackPage = { items: Array<{ track: SpotifyTrack | null }>; next: string | null }
+    const page: TrackPage = await spotifyGet<TrackPage>(url, accessToken)
 
     // Filter out null tracks (removed/unavailable)
-    const validTracks = data.items
-      .map(item => item.track)
-      .filter((track): track is SpotifyTrack => track !== null && !!track.id)
+    const validTracks = page.items
+      .map((item: { track: SpotifyTrack | null }) => item.track)
+      .filter((track: SpotifyTrack | null): track is SpotifyTrack => track !== null && !!track.id)
 
     tracks.push(...validTracks)
-    url = data.next ? data.next.replace(SPOTIFY_API, '') : null
+    url = page.next ? page.next.replace(SPOTIFY_API, '') : null
   }
 
   return tracks
