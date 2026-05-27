@@ -61,7 +61,6 @@ export const DJInterface: React.FC = () => {
 
   // Handle track loading to Spotify players
   const handleTrackSelect = async (track: any, deck: 'A' | 'B') => {
-    console.log(`Loading ${track.name} to Deck ${deck}`)
     setLoadedTracks(prev => ({ ...prev, [deck]: track }))
     
     // Load to Spotify player using URI
@@ -74,8 +73,6 @@ export const DJInterface: React.FC = () => {
 
   // Handle smart transitions
   const handleTransition = async (type: any, duration: number) => {
-    console.log(`Executing ${type} transition for ${duration} beats`)
-    
     // Map SmartTransition types to CrossfaderEngine types
     const transitionMap: Record<string, TransitionType> = {
       'crossfade': 'fade',
@@ -95,8 +92,6 @@ export const DJInterface: React.FC = () => {
 
   // Handle loop capture
   const handleLoopCapture = async (deck: 'A' | 'B', start: number, end: number, trailOff: number) => {
-    console.log(`Capturing loop on deck ${deck}: ${start}s - ${end}s with ${trailOff}s trail`)
-    
     // Convert times from milliseconds to seconds
     const startSeconds = start / 1000
     const endSeconds = end / 1000
@@ -202,13 +197,13 @@ export const DJInterface: React.FC = () => {
                 isPlaying={deckA.playerState.isPlaying}
                 currentTime={deckA.playerState.position}
                 onLoopCapture={(start, end, trail) => handleLoopCapture('A', start, end, trail)}
-                onLoopToggle={(enabled) => console.log('Loop A:', enabled)}
+                onLoopToggle={(_enabled) => {}}
               />
               <EffectsPanel
                 deckId="A"
                 effects={deckAEffects}
                 onEffectChange={(effect, value) => handleEffectChange('A', effect, value)}
-                onEffectToggle={(effect, enabled) => console.log(`Effect ${effect} on Deck A:`, enabled)}
+                onEffectToggle={(_effect, _enabled) => {}}
               />
             </div>
 
@@ -266,13 +261,13 @@ export const DJInterface: React.FC = () => {
                 isPlaying={deckB.playerState.isPlaying}
                 currentTime={deckB.playerState.position}
                 onLoopCapture={(start, end, trail) => handleLoopCapture('B', start, end, trail)}
-                onLoopToggle={(enabled) => console.log('Loop B:', enabled)}
+                onLoopToggle={(_enabled) => {}}
               />
               <EffectsPanel
                 deckId="B"
                 effects={deckBEffects}
                 onEffectChange={(effect, value) => handleEffectChange('B', effect, value)}
-                onEffectToggle={(effect, enabled) => console.log(`Effect ${effect} on Deck B:`, enabled)}
+                onEffectToggle={(_effect, _enabled) => {}}
               />
             </div>
           </div>

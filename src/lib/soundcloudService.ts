@@ -52,10 +52,10 @@ class SoundCloudService {
   private baseUrl = 'https://api-v2.soundcloud.com'
   
   constructor() {
-    // Use environment variables (will be undefined until app is approved)
-    this.clientId = process.env.NEXT_PUBLIC_SOUNDCLOUD_CLIENT_ID || 'PENDING_APPROVAL'
-    this.clientSecret = process.env.SOUNDCLOUD_CLIENT_SECRET || 'PENDING_APPROVAL'
-    this.redirectUri = process.env.NEXT_PUBLIC_SOUNDCLOUD_REDIRECT_URI || window.location.origin + '/auth/soundcloud/callback'
+    // Use environment variables
+    this.clientId = process.env.REACT_APP_SOUNDCLOUD_CLIENT_ID || ''
+    this.clientSecret = process.env.REACT_APP_SOUNDCLOUD_CLIENT_SECRET || ''
+    this.redirectUri = process.env.REACT_APP_SOUNDCLOUD_REDIRECT_URI || window.location.origin + '/auth/soundcloud/callback'
     
     // Check for stored access token
     if (typeof window !== 'undefined') {
