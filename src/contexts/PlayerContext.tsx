@@ -84,11 +84,6 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const finalAVolume = (channelAVolume / 100) * crossfaderA * (masterVolume / 100) * 100
     const finalBVolume = (channelBVolume / 100) * crossfaderB * (masterVolume / 100) * 100
     
-    console.log('Volume calculations:', { 
-      channelAVolume, channelBVolume, crossfaderPosition, masterVolume,
-      crossfaderA, crossfaderB, finalAVolume, finalBVolume 
-    })
-    
     deckA.setVolume(finalAVolume)
     deckB.setVolume(finalBVolume)
   }, [crossfaderPosition, masterVolume, channelAVolume, channelBVolume, deckA, deckB])
